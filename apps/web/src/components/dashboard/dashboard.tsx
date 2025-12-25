@@ -313,14 +313,12 @@ export function Dashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-0">
-            {stats && <ApplicationCharts stats={stats} />}
-
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg font-mono">Recent Applications</CardTitle>
-                    <CardDescription>Your latest 10 job applications</CardDescription>
+                    <CardDescription>Your latest job applications</CardDescription>
                   </div>
                   <Button
                     variant="outline"
@@ -334,7 +332,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <ApplicationTable
-                  applications={applications.slice(0, 10)}
+                  applications={applications.slice(0, 15)}
                   onUpdate={handleApplicationUpdated}
                   onDelete={handleApplicationDeleted}
                   onEdit={handleEdit}
