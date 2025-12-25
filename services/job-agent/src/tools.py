@@ -20,6 +20,9 @@ from src.config import (
     ADZUNA_API_KEY,
     ADZUNA_BASE_URL,
     ADZUNA_COUNTRY,
+    LINKEDIN_RAPIDAPI_KEY,
+    LINKEDIN_BASE_URL,
+    LINKEDIN_RAPIDAPI_HOST,
     API_TIMEOUT,
     API_MAX_RETRIES,
     API_RETRY_DELAY,
@@ -289,9 +292,182 @@ Job Listings:
 
 
 # =============================================================================
+# CREWAI TOOL: LINKEDIN JOB SEARCH
+# =============================================================================
+
+def _format_linkedin_job(job: Dict[str, Any]) -> str:
+    """
+    Format a LinkedIn job listing into a readable string.
+
+    Args:
+        job: Job data dictionary from LinkedIn API
+
+    Returns:
+        Formatted job listing string
+    """
+    title = job.get('job_title', 'N/A')
+    company = job.get('company_name', 'N/A')
+    location = job.get('job_location', 'N/A')
+    description = job.get('job_description', 'No description available')
+    url = job.get('linkedin_job_url_cleaned', job.get('job_url', 'N/A'))
+    posted = job.get('posted_date', 'N/A')
+    employment_type = job.get('job_employment_type', 'Not specified')
+
+    # Truncate description
+    max_description_length = 500
+    if len(description) > max_description_length:
+        description = description[:max_description_length] + "..."
+
+    formatted = f"""
+<job>
+    <title>{title}</title>
+    <company>{company}</company>
+    <location>{location}</location>
+    <employment_type>{employment_type}</employment_type>
+    <posted_date>{posted}</posted_date>
+    <description>
+        {description}
+    </description>
+    <apply_url>{url}</apply_url>
+    <source>LinkedIn</source>
+</job>
+"""
+    return formatted.strip()
+
+
+@tool("LinkedIn Job Search Tool")
+def search_linkedin_jobs(role: str, location: str, num_results: int) -> str:
+    """
+    Search for job listings on LinkedIn using RapidAPI.
+
+    Args:
+        role: Job title/role to search for (e.g., "Data Scientist")
+        location: Location to search in (e.g., "San Francisco")
+        num_results: Number of job listings to return (1-50)
+
+    Returns:
+        Formatted string containing LinkedIn job listings or error message
+    """
+
+    # Validate input
+    input_data = {
+        'role': role,
+        'location': location,
+        'num_results': num_results
+    }
+
+    is_valid, error_message = _validate_search_input(input_data)
+    if not is_valid:
+        return f"""
+❌ ERROR: Invalid input parameters.
+
+{error_message}
+
+Please provide valid parameters:
+- role: Job title (non-empty string)
+- location: Search location (non-empty string)
+- num_results: Number of results (1-50)
+"""
+
+    # Check API credentials
+    if not LINKEDIN_RAPIDAPI_KEY:
+        return """
+⚠️  LinkedIn API not configured.
+
+The LinkedIn Job Search Tool requires a RapidAPI key.
+To enable LinkedIn job search:
+1. Sign up at https://rapidapi.com
+2. Subscribe to the LinkedIn Jobs Search API
+3. Add your key to .env: LINKEDIN_RAPIDAPI_KEY=your_key
+
+Falling back to other job search tools.
+"""
+
+    # Build request
+    url = f"{LINKEDIN_BASE_URL}/"
+    headers = {
+        "X-RapidAPI-Key": LINKEDIN_RAPIDAPI_KEY,
+        "X-RapidAPI-Host": LINKEDIN_RAPIDAPI_HOST,
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "search_terms": role,
+        "location": location,
+        "page": "1"
+    }
+
+    print(f"\n🔍 Searching LinkedIn for {num_results} '{role}' jobs in {location}...")
+
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=API_TIMEOUT)
+        response.raise_for_status()
+        jobs_data = response.json()
+
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 401:
+            return "❌ ERROR: Invalid LinkedIn API key. Please check your LINKEDIN_RAPIDAPI_KEY."
+        elif response.status_code == 429:
+            return "❌ ERROR: LinkedIn API rate limit exceeded. Please try again later."
+        else:
+            return f"❌ ERROR: LinkedIn API returned status {response.status_code}: {str(e)}"
+
+    except requests.exceptions.Timeout:
+        return "❌ ERROR: LinkedIn API request timed out. Please try again."
+
+    except requests.exceptions.RequestException as e:
+        return f"❌ ERROR: Failed to connect to LinkedIn API: {str(e)}"
+
+    except json.JSONDecodeError:
+        return "❌ ERROR: Invalid JSON response from LinkedIn API"
+
+    # Parse results
+    results = jobs_data if isinstance(jobs_data, list) else jobs_data.get('jobs', [])
+
+    if not results:
+        return f"""
+ℹ️  No LinkedIn job listings found for '{role}' in {location}.
+
+Suggestions:
+- Try a broader search term
+- Try a different location format (e.g., "San Francisco, CA" or "San Francisco")
+- Check if the role name is commonly used on LinkedIn
+"""
+
+    # Limit to requested number
+    results = results[:num_results]
+
+    # Format jobs
+    formatted_jobs = []
+    for i, job in enumerate(results, 1):
+        formatted_job = _format_linkedin_job(job)
+        formatted_jobs.append(f"[LinkedIn Job {i}/{len(results)}]\n{formatted_job}")
+
+    output = f"""
+✅ Successfully found {len(results)} LinkedIn job listings
+
+Search Parameters:
+- Role: {role}
+- Location: {location}
+- Source: LinkedIn
+
+Job Listings:
+{"=" * 80}
+
+{"=" * 80}
+
+""".join(formatted_jobs)
+
+    print(f"✅ Found {len(results)} LinkedIn job listings!")
+
+    return output
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
 __all__ = [
     "search_jobs",
+    "search_linkedin_jobs",
 ]

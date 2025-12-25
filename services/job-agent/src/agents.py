@@ -16,7 +16,7 @@ from src.config import (
     AGENT_ALLOW_DELEGATION,
     AGENT_MEMORY,
 )
-from src.tools import search_jobs
+from src.tools import search_jobs, search_linkedin_jobs
 
 
 # =============================================================================
@@ -67,7 +67,7 @@ def create_job_searcher_agent() -> Agent:
             'to help candidates make informed decisions about their applications.'
         ),
 
-        tools=[search_jobs],
+        tools=[search_jobs, search_linkedin_jobs],
         verbose=AGENT_VERBOSE,
         allow_delegation=AGENT_ALLOW_DELEGATION,
         memory=AGENT_MEMORY,

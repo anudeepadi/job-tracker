@@ -48,6 +48,14 @@ ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs"
 ADZUNA_COUNTRY = "us"  # United States job listings
 
 # =============================================================================
+# LINKEDIN JOBS API (via RapidAPI)
+# =============================================================================
+
+LINKEDIN_RAPIDAPI_KEY = os.getenv("LINKEDIN_RAPIDAPI_KEY", "")
+LINKEDIN_BASE_URL = "https://linkedin-jobs-search.p.rapidapi.com"
+LINKEDIN_RAPIDAPI_HOST = "linkedin-jobs-search.p.rapidapi.com"
+
+# =============================================================================
 # API REQUEST SETTINGS
 # =============================================================================
 
@@ -130,11 +138,12 @@ def print_config():
     print("\n" + "=" * 80)
     print("CONFIGURATION")
     print("=" * 80)
-    print(f"  OpenAI API Key:    {'✅ Set' if OPENAI_API_KEY else '❌ Missing'}")
-    print(f"  Adzuna App ID:     {'✅ Set' if ADZUNA_APP_ID else '❌ Missing'}")
-    print(f"  Adzuna API Key:    {'✅ Set' if ADZUNA_API_KEY else '❌ Missing'}")
-    print(f"  LLM Model:         {LLM_MODEL}")
-    print(f"  Output Directory:  {OUTPUT_DIR}")
+    print(f"  OpenAI API Key:      {'✅ Set' if OPENAI_API_KEY else '❌ Missing'}")
+    print(f"  Adzuna App ID:       {'✅ Set' if ADZUNA_APP_ID else '❌ Missing'}")
+    print(f"  Adzuna API Key:      {'✅ Set' if ADZUNA_API_KEY else '❌ Missing'}")
+    print(f"  LinkedIn API Key:    {'✅ Set' if LINKEDIN_RAPIDAPI_KEY else '⚠️  Optional'}")
+    print(f"  LLM Model:           {LLM_MODEL}")
+    print(f"  Output Directory:    {OUTPUT_DIR}")
     print("=" * 80 + "\n")
 
 
@@ -148,6 +157,9 @@ __all__ = [
     "ADZUNA_API_KEY",
     "ADZUNA_BASE_URL",
     "ADZUNA_COUNTRY",
+    "LINKEDIN_RAPIDAPI_KEY",
+    "LINKEDIN_BASE_URL",
+    "LINKEDIN_RAPIDAPI_HOST",
     "API_TIMEOUT",
     "API_MAX_RETRIES",
     "API_RETRY_DELAY",

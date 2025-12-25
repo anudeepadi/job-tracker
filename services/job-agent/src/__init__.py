@@ -26,12 +26,13 @@ from src.config import (
 )
 from src.agents import create_all_agents
 from src.tasks import create_all_tasks
-from src.tools import search_jobs
+from src.tools import search_jobs, search_linkedin_jobs
 
 __all__ = [
     "create_all_agents",
     "create_all_tasks",
     "search_jobs",
+    "search_linkedin_jobs",
     "validate_config",
     "print_config",
     "DEFAULT_JOB_ROLE",
