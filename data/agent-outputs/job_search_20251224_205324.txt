@@ -1,0 +1,139 @@
+Task: job_search
+Timestamp: 20251224_205324
+================================================================================
+
+# Data Scientist Job Market Report - Austin, Texas
+
+## 1. Search Summary
+
+- **Number of jobs found:** 5 listings (from 396 total matches available)
+- **Search parameters:** Data Scientist roles in Austin, Texas
+- **Search date:** Current listings as of December 2025
+- **Overall market observations:** Strong demand with 396+ total Data Scientist positions available in the Austin market, indicating a robust job market for data science professionals
+
+## 2. Detailed Job Listings
+
+### Job 1: Data Scientist - Central Health
+- **Company:** Central Health
+- **Location:** Sprinkle, Travis County
+- **Salary range:** $124,354
+- **Posted date:** November 4, 2025
+- **Key required skills:** 
+  - Azure cloud platform experience
+  - Snowflake data platform
+  - AI and machine learning model development
+  - Scalable model building
+  - Healthcare data experience (preferred)
+- **Job description highlights:** 
+  - Mission-driven role supporting healthcare access for low-income Travis County residents
+  - Work under Principal Data Scientist guidance
+  - Build ethical, high-performing models
+  - Modern Azure-Snowflake data platform environment
+- **Application URL:** https://www.adzuna.com/details/5479709610?utm_medium=api&utm_source=600bdc10
+
+### Job 2: Data Scientist - Eliassen Group
+- **Company:** Eliassen Group
+- **Location:** Tarrytown, Travis County (Remote work available)
+- **Salary range:** $119,903
+- **Posted date:** December 23, 2025
+- **Key required skills:**
+  - Financial technology and services experience
+  - Contract work (12-month duration)
+  - Remote work capabilities
+  - PST timezone alignment
+- **Job description highlights:**
+  - 100% remote position
+  - Financial technology industry focus
+  - High-visibility finance transformation projects
+  - Contract opportunity with industry leader
+- **Application URL:** https://www.adzuna.com/details/5553607596?utm_medium=api&utm_source=600bdc10
+
+### Job 3: Data Scientist - inKind
+- **Company:** inKind
+- **Location:** Austin, Travis County
+- **Salary range:** $120,000 - $140,000
+- **Posted date:** November 7, 2025
+- **Key required skills:**
+  - Large dataset analysis
+  - Predictive forecasting
+  - Cross-functional collaboration (marketing, finance, product)
+  - Business intelligence and decision-making
+  - Automated business actions development
+- **Job description highlights:**
+  - Focus on actionable insights and predictive forecasts
+  - Cross-functional stakeholder collaboration
+  - Drive automated and ad hoc business decision making
+  - Work with marketing, finance, and product teams
+- **Application URL:** https://www.adzuna.com/details/5485878017?utm_medium=api&utm_source=600bdc10
+
+### Job 4: Data Scientist - Ferrovial
+- **Company:** Ferrovial
+- **Location:** Austin, Travis County
+- **Salary range:** $79,787
+- **Posted date:** December 2, 2025
+- **Key required skills:**
+  - Infrastructure industry experience
+  - Global company operations understanding
+  - Innovation and problem-solving capabilities
+- **Job description highlights:**
+  - Global leader in infrastructure
+  - Publicly traded company (Nasdaq, Euronext Amsterdam, IBEX 35)
+  - Member of Dow Jones Sustainability Index and FTSE4Good
+  - Focus on solving complex problems with positive social impact
+- **Application URL:** https://www.adzuna.com/details/5524605978?utm_medium=api&utm_source=600bdc10
+
+### Job 5: Data Scientist - CINTRA US SERVICES LLC
+- **Company:** CINTRA US SERVICES LLC (Ferrovial subsidiary)
+- **Location:** Austin, Travis County
+- **Salary range:** $83,162
+- **Posted date:** December 3, 2025
+- **Key required skills:**
+  - Infrastructure industry experience
+  - Innovation in transportation/infrastructure
+  - Global operations understanding
+- **Job description highlights:**
+  - Part of Ferrovial group
+  - Infrastructure innovation focus
+  - Global leader in transportation infrastructure
+  - Community of innovators and trailblazers
+- **Application URL:** https://www.adzuna.com/details/5526573323?utm_medium=api&utm_source=600bdc10
+
+## 3. Market Insights
+
+### Common Skills Across Listings:
+- **Cloud platforms** (Azure, Snowflake)
+- **Machine learning and AI model development**
+- **Large dataset analysis and management**
+- **Predictive analytics and forecasting**
+- **Cross-functional collaboration**
+- **Business intelligence and decision-making**
+- **Industry-specific experience** (healthcare, fintech, infrastructure)
+
+### Experience Level Patterns:
+- Mix of mid-level to senior positions
+- Positions requiring specialized industry knowledge
+- Emphasis on practical application and business impact
+- Collaboration skills highly valued across all roles
+
+### Salary Trends:
+- **Range:** $79,787 - $140,000
+- **Average:** ~$109,441
+- **Highest paying:** inKind ($120,000 - $140,000)
+- **Entry-level infrastructure roles:** $79,000 - $83,000
+- **Healthcare/specialized roles:** $120,000+
+
+### Notable Companies Hiring:
+- **Healthcare sector:** Central Health (mission-driven, public health focus)
+- **Technology/Fintech:** Eliassen Group (remote-friendly, contract work)
+- **Startup/Scale-up:** inKind (competitive salary, cross-functional role)
+- **Infrastructure/Global:** Ferrovial and CINTRA (established multinational, sustainability focus)
+
+### Key Market Observations:
+- Strong demand with 396+ available positions
+- Diverse industry representation (healthcare, fintech, infrastructure, startups)
+- Salary ranges vary significantly by industry and company size
+- Remote work options available in some positions
+- Emphasis on practical business application rather than pure research
+- Growing importance of ethical AI and sustainable business practices
+
+================================================================================

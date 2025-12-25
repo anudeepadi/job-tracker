@@ -1,0 +1,110 @@
+Task: job_search
+Timestamp: 20251224_204802
+================================================================================
+
+# Data Scientist Job Search Report - Austin Market
+
+## 1. Search Summary
+- **Number of jobs found**: 5 listings (from 396 total matches available)
+- **Search parameters used**: Role: "Data Scientist", Location: "Austin"
+- **Overall market observations**: Strong demand for Data Scientists in Austin with 396 total matches, indicating a robust job market. The positions span various industries including healthcare, fintech, restaurant technology, and infrastructure.
+
+## 2. Detailed Job Listings
+
+### Job 1: Data Scientist - Central Health
+- **Company**: Central Health
+- **Location**: Sprinkle, Travis County
+- **Salary**: $124,354
+- **Posted**: November 4, 2025
+- **Key highlights**: 
+  - Healthcare sector focused on serving low-income residents
+  - Works with Azure-Snowflake data platform
+  - Emphasis on ethical AI and scalable models
+  - Reports to Principal Data Scientist
+- **Application URL**: https://www.adzuna.com/details/5479709610?utm_medium=api&utm_source=600bdc10
+
+### Job 2: Data Scientist - Eliassen Group (Contract)
+- **Company**: Eliassen Group
+- **Location**: Tarrytown, Travis County (100% Remote, PST hours)
+- **Salary**: $119,903
+- **Posted**: December 23, 2025
+- **Key highlights**:
+  - 12-month contract opportunity
+  - Financial technology and services industry
+  - High-visibility finance transformation projects
+  - Remote work arrangement
+- **Application URL**: https://www.adzuna.com/details/5553607596?utm_medium=api&utm_source=600bdc10
+
+### Job 3: Data Scientist - inKind
+- **Company**: inKind
+- **Location**: Austin, Travis County
+- **Salary**: $120,000 - $140,000
+- **Posted**: November 7, 2025
+- **Key highlights**:
+  - Restaurant technology/fintech company
+  - Focus on predictive forecasting and automated decision making
+  - Cross-functional collaboration with marketing, finance, and product teams
+  - Large dataset analysis and actionable insights generation
+- **Application URL**: https://www.adzuna.com/details/5485878017?utm_medium=api&utm_source=600bdc10
+
+### Job 4: Data Scientist - Ferrovial
+- **Company**: Ferrovial
+- **Location**: Austin, Travis County
+- **Salary**: $79,787
+- **Posted**: December 2, 2025
+- **Key highlights**:
+  - Global infrastructure company
+  - Listed on multiple stock markets (Nasdaq, Euronext, IBEX 35)
+  - Member of Dow Jones Sustainability Index
+  - Focus on complex problem-solving with positive social impact
+- **Application URL**: https://www.adzuna.com/details/5524605978?utm_medium=api&utm_source=600bdc10
+
+### Job 5: Data Scientist - CINTRA US SERVICES LLC
+- **Company**: CINTRA US SERVICES LLC (Ferrovial subsidiary)
+- **Location**: Austin, Travis County
+- **Salary**: $83,162
+- **Posted**: December 3, 2025
+- **Key highlights**:
+  - Part of Ferrovial group (infrastructure sector)
+  - Global company with sustainability focus
+  - Innovation-driven environment
+  - Infrastructure and transportation focus
+- **Application URL**: https://www.adzuna.com/details/5526573323?utm_medium=api&utm_source=600bdc10
+
+## 3. Market Insights
+
+### Common Skills & Technologies Across Listings:
+- **Cloud Platforms**: Azure, Snowflake data platform
+- **Data Analysis**: Large dataset processing and analysis
+- **Predictive Modeling**: Forecasting and automated decision-making systems
+- **Cross-functional Collaboration**: Working with marketing, finance, product teams
+- **Ethical AI**: Focus on responsible AI development
+
+### Experience Level Patterns:
+- Mix of mid-level to senior positions
+- Some roles require guidance from Principal/Senior Data Scientists
+- Emphasis on independent work and strategic thinking
+- Cross-functional collaboration skills highly valued
+
+### Salary Trends:
+- **Range**: $79,787 - $140,000
+- **Average**: ~$109,441
+- **Contract vs Full-time**: Contract position at $119,903 (competitive rate)
+- **Healthcare sector**: Highest salary at $124,354
+- **Infrastructure sector**: Lower range ($79,787 - $83,162)
+- **Tech/Fintech**: Mid to high range ($119,903 - $140,000)
+
+### Notable Companies Hiring:
+- **Central Health**: Public healthcare organization with social impact mission
+- **inKind**: Growing restaurant technology/fintech startup
+- **Ferrovial/CINTRA**: Global infrastructure giant with sustainability focus
+- **Eliassen Group**: Technology consulting firm offering contract opportunities
+
+### Key Market Observations:
+- Strong diversity in industry sectors (healthcare, fintech, infrastructure)
+- Mix of permanent and contract opportunities available
+- Remote work options present in some roles
+- Emphasis on ethical AI and sustainability across multiple employers
+- Austin's position as a major tech hub reflected in variety of opportunities
+
+================================================================================

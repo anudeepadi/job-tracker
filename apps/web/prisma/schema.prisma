@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Job Application Tracking Models
+// =============================================================================
+
+model Application {
+  id            String   @id @default(cuid())
+  company       String
+  jobTitle      String
+  jobUrl        String?
+  location      String?
+  locationType  String? // Remote, Hybrid, Onsite
+  salaryMin     Int?
+  salaryMax     Int?
+  currency      String?  @default("USD")
+  status        String   @default("Applied")
+  priority      String   @default("Medium")
+  source        String?
+  contactPerson String?
+  contactEmail  String?
+  appliedDate   DateTime
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // AI Search Integration - links to the JobSearch that discovered this opportunity
+  aiSearchId String?
+  aiSearch   JobSearch? @relation(fields: [aiSearchId], references: [id], onDelete: SetNull)
+
+  activities Activity[]
+  reminders  Reminder[]
+}
+
+model Activity {
+  id            String   @id @default(cuid())
+  applicationId String
+  type          String // Status Change, Interview, Email, Note
+  description   String
+  date          DateTime
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Reminder {
+  id            String   @id @default(cuid())
+  applicationId String
+  title         String
+  description   String?
+  dueDate       DateTime
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// AI Agent Job Search Models
+// =============================================================================
+
+// Represents a job search session initiated by the AI agent
+model JobSearch {
+  id           String    @id @default(cuid())
+  role         String // The job role/title being searched for
+  location     String? // Target location (can be null for remote-only searches)
+  numResults   Int       @default(10) // Number of results requested
+  status       String    @default("pending") // pending, running, completed, failed
+  errorMessage String? // Error details if status is 'failed'
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime? // When the search finished (success or failure)
+
+  // Relations
+  results      JobResult[]
+  agentOutputs AgentOutput[]
+  applications Application[] // Applications created from this search
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Individual job listings discovered during a search
+model JobResult {
+  id          String   @id @default(cuid())
+  searchId    String
+  title       String // Job title
+  company     String // Company name
+  location    String? // Job location
+  salary      String? // Salary range as text (e.g., "$100k-$150k")
+  description String? // Job description (can be long)
+  applyUrl    String? // Direct application URL
+  sourceUrl   String? // Original listing URL
+  postedDate  String? // When the job was posted (text, as scraped)
+  jobType     String? // Full-time, Part-time, Contract, etc.
+  remote      Boolean? // Whether the job is remote
+  createdAt   DateTime @default(now())
+
+  // Link to Application if this job was imported into the tracker
+  importedAsApplicationId String?   @unique
+  importedAt              DateTime?
+
+  // Relations
+  search JobSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@index([searchId])
+  @@index([company])
+  @@index([title])
+}
+
+// Stores full agent outputs (skills analysis, interview prep, etc.)
+model AgentOutput {
+  id        String   @id @default(cuid())
+  searchId  String? // Optional: may be associated with a job search
+  agentType String // job_searcher, skills_advisor, interview_coach, career_advisor
+  prompt    String? // The input prompt/query that triggered this output
+  output    String // The full agent output text
+  metadata  String? // JSON string for additional structured data
+  createdAt DateTime @default(now())
+
+  // Relations
+  search JobSearch? @relation(fields: [searchId], references: [id], onDelete: SetNull)
+
+  @@index([searchId])
+  @@index([agentType])
+  @@index([createdAt])
+}

@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "claude-flow@alpha": {
+      "command": "npx",
+      "args": [
+        "claude-flow@alpha",
+        "mcp",
+        "start"
+      ],
+      "type": "stdio",
+      "env": {
+        "MONOREPO_ROOT": "/Users/vuc229/Downloads/Projects/Jobs",
+        "FRONTEND_PATH": "apps/web",
+        "BACKEND_PATH": "services/job-agent",
+        "OUTPUT_PATH": "data/agent-outputs"
+      }
+    },
+    "ruv-swarm": {
+      "command": "npx",
+      "args": [
+        "ruv-swarm@latest",
+        "mcp",
+        "start"
+      ],
+      "type": "stdio"
+    },
+    "flow-nexus": {
+      "command": "npx",
+      "args": [
+        "flow-nexus@latest",
+        "mcp",
+        "start"
+      ],
+      "type": "stdio"
+    }
+  }
+}

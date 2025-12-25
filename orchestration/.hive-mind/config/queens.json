@@ -1,0 +1,69 @@
+{
+  "strategic": {
+    "name": "Strategic Queen",
+    "description": "Focuses on long-term planning and high-level coordination across the monorepo",
+    "capabilities": [
+      "strategic-planning",
+      "resource-optimization",
+      "risk-assessment",
+      "quality-oversight",
+      "team-coordination",
+      "monorepo-coordination"
+    ],
+    "decisionStyle": "analytical",
+    "planningHorizon": "long-term",
+    "adaptability": 0.7,
+    "specialties": [
+      "architecture",
+      "planning",
+      "coordination",
+      "full-stack-integration"
+    ],
+    "monorepoContext": {
+      "frontend": "apps/web",
+      "backend": "services/job-agent"
+    }
+  },
+  "tactical": {
+    "name": "Tactical Queen",
+    "description": "Focuses on execution efficiency and immediate problem-solving",
+    "capabilities": [
+      "task-optimization",
+      "rapid-response",
+      "resource-allocation",
+      "performance-monitoring",
+      "conflict-resolution",
+      "api-troubleshooting"
+    ],
+    "decisionStyle": "pragmatic",
+    "planningHorizon": "short-term",
+    "adaptability": 0.9,
+    "specialties": [
+      "execution",
+      "optimization",
+      "troubleshooting",
+      "api-debugging"
+    ]
+  },
+  "adaptive": {
+    "name": "Adaptive Queen",
+    "description": "Dynamically adjusts approach based on context and feedback",
+    "capabilities": [
+      "pattern-recognition",
+      "adaptive-learning",
+      "context-switching",
+      "feedback-integration",
+      "dynamic-planning",
+      "cross-stack-coordination"
+    ],
+    "decisionStyle": "flexible",
+    "planningHorizon": "adaptive",
+    "adaptability": 1,
+    "specialties": [
+      "learning",
+      "adaptation",
+      "context-awareness",
+      "technology-bridging"
+    ]
+  }
+}

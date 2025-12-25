@@ -1,0 +1,348 @@
+Task: interview_prep
+Timestamp: 20251224_205003
+================================================================================
+
+# Comprehensive Data Scientist Interview Preparation Guide - Austin Market
+
+## 1. Interview Overview
+
+**Number of roles being prepared for**: 5 Data Scientist positions across healthcare, fintech, restaurant technology, and infrastructure sectors
+
+**Common interview formats to expect**:
+- Technical screening (1-2 hours): Coding, statistics, ML concepts
+- Take-home project or case study (2-3 days to complete)
+- On-site/virtual panel interviews (4-6 hours): Technical deep-dive, behavioral, system design
+- Final round with hiring manager/leadership
+
+**General preparation timeline**: 2-3 weeks of focused preparation
+
+---
+
+## 2. Role-Specific Interview Questions
+
+### Job 1: Data Scientist - Central Health
+
+**A. Job Details Recap**
+- **Company**: Central Health (Healthcare sector serving low-income residents)
+- **Key requirements**: Azure-Snowflake platform, ethical AI, scalable models, healthcare analytics
+
+**B. Technical Questions**
+
+<question>
+  <type>Technical</type>
+  <text>How would you approach building an ethical AI model for healthcare outcomes prediction while ensuring fairness across different demographic groups?</text>
+  <guidance>
+    <evaluating>Understanding of bias in healthcare AI, ethical considerations, and technical implementation</evaluating>
+    <structure>Define ethical AI → Identify potential biases → Mitigation strategies → Validation methods</structure>
+    <key_points>
+      - Discuss fairness metrics (demographic parity, equalized odds)
+      - Address data representation and historical bias
+      - Mention regulatory compliance (HIPAA, FDA guidelines)
+      - Include model interpretability and transparency
+    </key_points>
+    <example>Start with "Ethical AI in healthcare requires addressing both technical and social considerations. I'd begin by auditing our training data for demographic representation, implement fairness constraints during model training, and use techniques like LIME or SHAP for explainability."</example>
+    <avoid>Being too theoretical without practical implementation steps, ignoring regulatory requirements</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Technical</type>
+  <text>Describe your experience with Azure-Snowflake data platforms and how you would optimize data pipelines for large-scale healthcare analytics.</text>
+  <guidance>
+    <evaluating>Hands-on experience with cloud platforms and data engineering skills</evaluating>
+    <structure>Platform experience → Architecture design → Optimization strategies → Monitoring</structure>
+    <key_points>
+      - Discuss data warehousing concepts and ETL processes
+      - Mention cost optimization strategies
+      - Address data security and compliance
+      - Include performance monitoring and scaling
+    </key_points>
+    <example>"I've worked with Azure Data Factory for ETL processes and Snowflake's virtual warehouses for scalable compute. For healthcare data, I'd implement row-level security, use Snowflake's clustering keys for query optimization, and leverage Azure's compliance certifications."</example>
+    <avoid>Claiming expertise you don't have, not addressing healthcare-specific requirements</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Technical</type>
+  <text>Walk me through how you would validate and monitor a machine learning model deployed in a healthcare setting.</text>
+  <guidance>
+    <evaluating>MLOps knowledge and understanding of model lifecycle management</evaluating>
+    <structure>Validation framework → Deployment strategy → Monitoring setup → Maintenance process</structure>
+    <key_points>
+      - Discuss A/B testing in healthcare context
+      - Address model drift and data drift
+      - Include clinical validation requirements
+      - Mention feedback loops and continuous learning
+    </key_points>
+    <example>"I'd implement a staged deployment with shadow mode testing, monitor key performance metrics like AUC and calibration, track data drift using statistical tests, and establish regular retraining schedules based on performance degradation thresholds."</example>
+    <avoid>Ignoring healthcare-specific validation requirements, not addressing patient safety considerations</avoid>
+  </guidance>
+</question>
+
+**C. Behavioral Questions**
+
+<question>
+  <type>Behavioral</type>
+  <text>Tell me about a time when you had to communicate complex analytical findings to non-technical stakeholders in a healthcare or public service context.</text>
+  <guidance>
+    <evaluating>Communication skills, ability to translate technical concepts, stakeholder management</evaluating>
+    <structure>STAR method: Situation → Task → Action → Result</structure>
+    <key_points>
+      - Emphasize clear, jargon-free communication
+      - Show understanding of audience needs
+      - Demonstrate impact on decision-making
+      - Include visual storytelling techniques
+    </key_points>
+    <example>Prepare a story about presenting model results to clinicians, administrators, or policy makers, focusing on how you adapted your communication style and used visualizations to convey insights.</example>
+    <avoid>Being too technical in your explanation, not showing the business impact</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Behavioral</type>
+  <text>Describe a situation where you identified and addressed bias in a dataset or model. How did you handle it?</text>
+  <guidance>
+    <evaluating>Ethical awareness, problem-solving skills, attention to detail</evaluating>
+    <structure>STAR method focusing on the discovery, analysis, and resolution process</structure>
+    <key_points>
+      - Show proactive bias detection
+      - Describe specific mitigation techniques used
+      - Emphasize collaboration with domain experts
+      - Include validation of fairness improvements
+    </key_points>
+    <example>Discuss discovering demographic bias in historical data, implementing fairness constraints, and validating improvements through multiple fairness metrics.</example>
+    <avoid>Claiming you've never encountered bias, not providing specific technical solutions</avoid>
+  </guidance>
+</question>
+
+**D. Situational Questions**
+
+<question>
+  <type>Situational</type>
+  <text>A clinical team reports that your predictive model's recommendations don't align with their clinical judgment in certain cases. How would you investigate and address this?</text>
+  <guidance>
+    <evaluating>Collaboration skills, problem-solving approach, domain knowledge integration</evaluating>
+    <structure>Listen and understand → Investigate systematically → Collaborate on solutions → Implement improvements</structure>
+    <key_points>
+      - Show respect for clinical expertise
+      - Describe systematic investigation methods
+      - Emphasize collaborative problem-solving
+      - Include model improvement strategies
+    </key_points>
+    <example>"I'd first meet with the clinical team to understand specific cases and their reasoning, then analyze these cases for patterns, check for model limitations or edge cases, and work together to refine the model or add clinical rules."</example>
+    <avoid>Being defensive about your model, dismissing clinical expertise</avoid>
+  </guidance>
+</question>
+
+**E. Role/Company-Specific Questions**
+
+<question>
+  <type>Role-specific</type>
+  <text>Why are you interested in working in healthcare analytics, specifically for an organization serving low-income populations?</text>
+  <guidance>
+    <evaluating>Mission alignment, understanding of healthcare disparities, genuine interest</evaluating>
+    <structure>Personal motivation → Understanding of challenges → How you can contribute → Long-term impact</structure>
+    <key_points>
+      - Show understanding of health equity issues
+      - Demonstrate knowledge of Central Health's mission
+      - Connect your skills to their specific challenges
+      - Express genuine commitment to social impact
+    </key_points>
+    <example>"I'm passionate about using data science to address health disparities. Central Health's mission to serve low-income residents aligns with my values, and I see opportunities to improve care access and outcomes through predictive analytics and resource optimization."</example>
+    <avoid>Generic answers about healthcare, not researching the organization's specific mission</avoid>
+  </guidance>
+</question>
+
+### Job 2: Data Scientist - Eliassen Group (Contract)
+
+**A. Job Details Recap**
+- **Company**: Eliassen Group (Technology consulting, 12-month contract)
+- **Key requirements**: Financial technology, transformation projects, remote work, PST hours
+
+**B. Technical Questions**
+
+<question>
+  <type>Technical</type>
+  <text>How would you approach a financial data transformation project where you need to migrate legacy systems while ensuring data integrity and regulatory compliance?</text>
+  <guidance>
+    <evaluating>Data migration experience, understanding of financial regulations, project management skills</evaluating>
+    <structure>Assessment → Planning → Implementation → Validation → Compliance verification</structure>
+    <key_points>
+      - Discuss data quality assessment and profiling
+      - Address regulatory requirements (SOX, Basel III, etc.)
+      - Include data lineage and audit trails
+      - Mention parallel run strategies
+    </key_points>
+    <example>"I'd start with comprehensive data profiling to understand current state, design a migration strategy with rollback capabilities, implement data quality checks at each stage, and ensure full audit trails for compliance reporting."</example>
+    <avoid>Underestimating complexity of financial data, ignoring regulatory requirements</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Technical</type>
+  <text>Describe how you would build a real-time fraud detection system for financial transactions.</text>
+  <guidance>
+    <evaluating>Real-time systems knowledge, fraud detection techniques, scalability understanding</evaluating>
+    <structure>Architecture design → Feature engineering → Model selection → Deployment → Monitoring</structure>
+    <key_points>
+      - Discuss streaming data processing (Kafka, Spark Streaming)
+      - Address latency requirements and model complexity trade-offs
+      - Include ensemble methods and rule-based systems
+      - Mention false positive management
+    </key_points>
+    <example>"I'd design a hybrid system using streaming analytics for rule-based checks and lightweight ML models for anomaly detection, with more complex models running in batch for deeper analysis and model updates."</example>
+    <avoid>Proposing overly complex solutions for real-time constraints, not considering false positive costs</avoid>
+  </guidance>
+</question>
+
+**C. Behavioral Questions**
+
+<question>
+  <type>Behavioral</type>
+  <text>Tell me about a time when you had to deliver a project under tight deadlines while maintaining quality standards.</text>
+  <guidance>
+    <evaluating>Time management, quality focus, ability to work under pressure</evaluating>
+    <structure>STAR method emphasizing prioritization and quality assurance</structure>
+    <key_points>
+      - Show systematic approach to prioritization
+      - Demonstrate quality control measures
+      - Include stakeholder communication
+      - Highlight successful delivery
+    </key_points>
+    <example>Describe a project where you used agile methodologies, implemented automated testing, and maintained regular stakeholder communication to deliver on time without compromising quality.</example>
+    <avoid>Suggesting you would cut corners on quality, not showing systematic approach</avoid>
+  </guidance>
+</question>
+
+**D. Situational Questions**
+
+<question>
+  <type>Situational</type>
+  <text>You're working remotely across time zones on a critical financial project. How would you ensure effective collaboration and project success?</text>
+  <guidance>
+    <evaluating>Remote work skills, cross-timezone collaboration, project management</evaluating>
+    <structure>Communication strategy → Tool selection → Schedule coordination → Progress tracking</structure>
+    <key_points>
+      - Emphasize proactive communication
+      - Discuss asynchronous work strategies
+      - Include documentation and knowledge sharing
+      - Address cultural sensitivity
+    </key_points>
+    <example>"I'd establish clear communication protocols with daily standups recorded for different time zones, use collaborative tools like Slack and Confluence, and maintain detailed documentation to ensure continuity across handoffs."</example>
+    <avoid>Underestimating timezone challenges, not addressing communication gaps</avoid>
+  </guidance>
+</question>
+
+### Job 3: Data Scientist - inKind
+
+**A. Job Details Recap**
+- **Company**: inKind (Restaurant technology/fintech startup)
+- **Key requirements**: Predictive forecasting, automated decision making, cross-functional collaboration
+
+**B. Technical Questions**
+
+<question>
+  <type>Technical</type>
+  <text>How would you build a demand forecasting model for restaurants that accounts for seasonality, local events, and weather patterns?</text>
+  <guidance>
+    <evaluating>Time series forecasting expertise, feature engineering, domain understanding</evaluating>
+    <structure>Data exploration → Feature engineering → Model selection → Validation → Deployment</structure>
+    <key_points>
+      - Discuss time series decomposition and seasonality handling
+      - Address external data integration (weather APIs, event calendars)
+      - Include model ensemble approaches
+      - Mention inventory optimization applications
+    </key_points>
+    <example>"I'd use a combination of SARIMA for trend/seasonality, XGBoost for external features like weather and events, and ensemble the predictions. I'd validate using time-based cross-validation and implement online learning for model updates."</example>
+    <avoid>Ignoring restaurant-specific factors, not addressing data quality challenges</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Technical</type>
+  <text>Describe how you would design an automated pricing optimization system for restaurant menu items.</text>
+  <guidance>
+    <evaluating>Optimization algorithms, business understanding, automated systems design</evaluating>
+    <structure>Problem formulation → Data requirements → Algorithm design → Testing framework → Implementation</structure>
+    <key_points>
+      - Discuss price elasticity modeling
+      - Address multi-objective optimization (profit vs. demand)
+      - Include A/B testing framework
+      - Mention competitive pricing considerations
+    </key_points>
+    <example>"I'd model price elasticity using historical sales data, implement multi-objective optimization balancing revenue and customer satisfaction, and use reinforcement learning for dynamic pricing with safety constraints."</example>
+    <avoid>Oversimplifying pricing complexity, not considering customer behavior</avoid>
+  </guidance>
+</question>
+
+**C. Behavioral Questions**
+
+<question>
+  <type>Behavioral</type>
+  <text>Tell me about a time when you had to work closely with marketing and product teams to implement a data-driven solution.</text>
+  <guidance>
+    <evaluating>Cross-functional collaboration, stakeholder management, business acumen</evaluating>
+    <structure>STAR method focusing on collaboration and business impact</structure>
+    <key_points>
+      - Show understanding of different team priorities
+      - Demonstrate translation of technical concepts
+      - Include iterative feedback incorporation
+      - Highlight measurable business outcomes
+    </key_points>
+    <example>Describe collaborating on a customer segmentation project, working with marketing on campaign targeting and product on feature recommendations, showing how you balanced technical accuracy with business practicality.</example>
+    <avoid>Focusing only on technical aspects, not showing business impact</avoid>
+  </guidance>
+</question>
+
+### Job 4 & 5: Data Scientist - Ferrovial/CINTRA
+
+**A. Job Details Recap**
+- **Company**: Ferrovial/CINTRA (Global infrastructure, sustainability focus)
+- **Key requirements**: Complex problem-solving, social impact, innovation, transportation/infrastructure
+
+**B. Technical Questions**
+
+<question>
+  <type>Technical</type>
+  <text>How would you approach analyzing traffic patterns and optimizing infrastructure utilization for a major highway system?</text>
+  <guidance>
+    <evaluating>Spatial-temporal analysis, optimization techniques, infrastructure domain knowledge</evaluating>
+    <structure>Data collection → Pattern analysis → Optimization modeling → Implementation strategy</structure>
+    <key_points>
+      - Discuss IoT sensor data and traffic flow analysis
+      - Address peak hour optimization and congestion modeling
+      - Include predictive maintenance applications
+      - Mention environmental impact considerations
+    </key_points>
+    <example>"I'd analyze traffic sensor data using time series clustering to identify patterns, build flow optimization models considering capacity constraints, and implement dynamic routing recommendations to maximize throughput while minimizing environmental impact."</example>
+    <avoid>Ignoring real-world constraints, not considering environmental factors</avoid>
+  </guidance>
+</question>
+
+<question>
+  <type>Technical</type>
+  <text>Describe how you would develop a predictive maintenance model for critical infrastructure assets.</text>
+  <guidance>
+    <evaluating>Predictive analytics, reliability engineering, risk assessment</evaluating>
+    <structure>Asset assessment → Data collection → Model development → Risk prioritization → Implementation</structure>
+    <key_points>
+      - Discuss sensor data and failure mode analysis
+      - Address survival analysis and reliability modeling
+      - Include cost-benefit optimization
+      - Mention safety and regulatory compliance
+    </key_points>
+    <example>"I'd use survival analysis to model time-to-failure, incorporate sensor data for real-time health monitoring, and optimize maintenance schedules using cost-benefit analysis while ensuring safety requirements are met."</example>
+    <avoid>Not considering safety implications, ignoring cost constraints</avoid>
+  </guidance>
+</question>
+
+---
+
+## 3. Company Research Guide
+
+### Central Health
+**Research focus**:
+- Mission to serve low-income residents of Travis County
+- Recent initiatives in healthcare
+
+================================================================================

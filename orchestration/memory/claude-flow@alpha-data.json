@@ -1,0 +1,11 @@
+{
+  "agents": [],
+  "tasks": [],
+  "monorepoMapping": {
+    "frontend": "apps/web",
+    "backend": "services/job-agent",
+    "outputs": "data/agent-outputs",
+    "orchestration": "orchestration"
+  },
+  "lastUpdated": 1735095600000
+}
