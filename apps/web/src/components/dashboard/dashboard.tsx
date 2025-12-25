@@ -5,11 +5,13 @@ import { StatsCards } from './stats-cards'
 import { ApplicationCharts } from './application-charts'
 import { ApplicationTable } from './application-table'
 import { AddApplicationDialog } from './add-application-dialog'
+import { EditApplicationDialog } from './edit-application-dialog'
 import { JobSearchPanel } from '@/components/job-search/job-search-panel'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Download, Sparkles, MessageSquare } from 'lucide-react'
+import { Plus, Download, Sparkles, MessageSquare, LayoutDashboard, Briefcase, BarChart3, Bot } from 'lucide-react'
 import Link from 'next/link'
 import { Application, ApplicationStats, JobResult } from '@/lib/types'
 import { toast } from 'sonner'
@@ -19,6 +21,9 @@ export function Dashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingApplication, setEditingApplication] = useState<Application | null>(null)
+  const [activeTab, setActiveTab] = useState('overview')
 
   const fetchStats = async () => {
     try {
@@ -34,7 +39,7 @@ export function Dashboard() {
 
   const fetchApplications = async () => {
     try {
-      const response = await fetch('/api/applications?limit=50')
+      const response = await fetch('/api/applications?limit=500')
       if (!response.ok) throw new Error('Failed to fetch applications')
       const data = await response.json()
       setApplications(data.applications || [])
@@ -64,13 +69,19 @@ export function Dashboard() {
   const handleApplicationUpdated = () => {
     fetchStats()
     fetchApplications()
-    toast.success('Application updated successfully')
+    setIsEditDialogOpen(false)
+    setEditingApplication(null)
   }
 
   const handleApplicationDeleted = () => {
     fetchStats()
     fetchApplications()
     toast.success('Application deleted successfully')
+  }
+
+  const handleEdit = (application: Application) => {
+    setEditingApplication(application)
+    setIsEditDialogOpen(true)
   }
 
   const handleExport = async () => {
@@ -142,99 +153,244 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading dashboard...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground font-mono text-sm">Loading dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between mb-12 pt-8">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-mono text-xs tracking-widest uppercase">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            System Status: Online
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-foreground">
-            Job Tracker<span className="text-primary">.</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl font-light border-l-2 border-primary/20 pl-4">
-            Track and manage your job applications with agent-native precision.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
-            <Link href="/ai-search">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              AI Chat
+    <div className="min-h-screen bg-background">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 border-b border-primary/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                <Briefcase className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-lg tracking-tight">JobTracker</span>
             </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <Button
+                variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="font-mono text-xs"
+                onClick={() => setActiveTab('overview')}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-1.5" />
+                Overview
+              </Button>
+              <Button
+                variant={activeTab === 'applications' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="font-mono text-xs"
+                onClick={() => setActiveTab('applications')}
+              >
+                <Briefcase className="h-4 w-4 mr-1.5" />
+                Applications
+              </Button>
+              <Button
+                variant={activeTab === 'analytics' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="font-mono text-xs"
+                onClick={() => setActiveTab('analytics')}
+              >
+                <BarChart3 className="h-4 w-4 mr-1.5" />
+                Analytics
+              </Button>
+              <Button
+                variant={activeTab === 'ai-search' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="font-mono text-xs"
+                onClick={() => setActiveTab('ai-search')}
+              >
+                <Bot className="h-4 w-4 mr-1.5" />
+                AI Search
+              </Button>
+            </nav>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="font-mono text-xs hidden sm:flex">
+              <Link href="/ai-search">
+                <MessageSquare className="h-4 w-4 mr-1.5" />
+                AI Chat
+              </Link>
+            </Button>
+            <ThemeToggle />
+            <Button onClick={() => setIsAddDialogOpen(true)} size="sm" className="font-mono text-xs">
+              <Plus className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Add</span>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden border-b border-primary/10 bg-muted/30">
+        <div className="container px-4 py-2 flex gap-1 overflow-x-auto">
+          <Button
+            variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="font-mono text-xs shrink-0"
+            onClick={() => setActiveTab('overview')}
+          >
+            <LayoutDashboard className="h-4 w-4" />
           </Button>
-          <Button onClick={handleExport} variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+          <Button
+            variant={activeTab === 'applications' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="font-mono text-xs shrink-0"
+            onClick={() => setActiveTab('applications')}
+          >
+            <Briefcase className="h-4 w-4" />
           </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="lg" className="font-mono text-xs uppercase tracking-wider h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-[0_0_20px_-5px_var(--primary)]">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Application
+          <Button
+            variant={activeTab === 'analytics' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="font-mono text-xs shrink-0"
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={activeTab === 'ai-search' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="font-mono text-xs shrink-0"
+            onClick={() => setActiveTab('ai-search')}
+          >
+            <Bot className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {stats && <StatsCards stats={stats} />}
+      {/* Main Content */}
+      <main className="container px-4 py-6 space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              {activeTab === 'overview' && 'Dashboard'}
+              {activeTab === 'applications' && 'Applications'}
+              {activeTab === 'analytics' && 'Analytics'}
+              {activeTab === 'ai-search' && 'AI Job Search'}
+            </h1>
+            <p className="text-muted-foreground">
+              {activeTab === 'overview' && 'Overview of your job search progress'}
+              {activeTab === 'applications' && 'Manage and track all your job applications'}
+              {activeTab === 'analytics' && 'Visualize your application statistics'}
+              {activeTab === 'ai-search' && 'Search for jobs with AI-powered assistance'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {(activeTab === 'overview' || activeTab === 'applications') && (
+              <>
+                <Button onClick={handleExport} variant="outline" size="sm" className="font-mono text-xs">
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Export CSV
+                </Button>
+                <Button onClick={() => setIsAddDialogOpen(true)} size="sm" className="font-mono text-xs">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Add Application
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="ai-search" className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI Job Search
-          </TabsTrigger>
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+        {/* Stats Cards - Show on Overview */}
+        {activeTab === 'overview' && stats && <StatsCards stats={stats} />}
 
-        <TabsContent value="overview" className="space-y-4">
-          {stats && <ApplicationCharts stats={stats} />}
+        {/* Tab Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="sr-only">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="ai-search">AI Search</TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Applications</CardTitle>
-            </CardHeader>
-            <ApplicationTable
-              applications={applications.slice(0, 10)}
-              onUpdate={handleApplicationUpdated}
-              onDelete={handleApplicationDeleted}
-            />
-          </Card>
-        </TabsContent>
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            {stats && <ApplicationCharts stats={stats} />}
 
-        <TabsContent value="ai-search" className="space-y-4">
-          <JobSearchPanel onImportJob={handleImportJob} />
-        </TabsContent>
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-mono">Recent Applications</CardTitle>
+                    <CardDescription>Your latest 10 job applications</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="font-mono text-xs"
+                    onClick={() => setActiveTab('applications')}
+                  >
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ApplicationTable
+                  applications={applications.slice(0, 10)}
+                  onUpdate={handleApplicationUpdated}
+                  onDelete={handleApplicationDeleted}
+                  onEdit={handleEdit}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="applications">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Applications</CardTitle>
-            </CardHeader>
-            <ApplicationTable
-              applications={applications}
-              onUpdate={handleApplicationUpdated}
-              onDelete={handleApplicationDeleted}
-              showPagination={true}
-            />
-          </Card>
-        </TabsContent>
+          <TabsContent value="applications" className="mt-0">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-mono">All Applications</CardTitle>
+                <CardDescription>
+                  {applications.length} total applications tracked
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApplicationTable
+                  applications={applications}
+                  onUpdate={handleApplicationUpdated}
+                  onDelete={handleApplicationDeleted}
+                  onEdit={handleEdit}
+                  showPagination={true}
+                  showFilters={true}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="analytics">
-          {stats && <ApplicationCharts stats={stats} />}
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="analytics" className="space-y-6 mt-0">
+            {stats && (
+              <>
+                <StatsCards stats={stats} />
+                <ApplicationCharts stats={stats} />
+              </>
+            )}
+          </TabsContent>
 
+          <TabsContent value="ai-search" className="mt-0">
+            <JobSearchPanel onImportJob={handleImportJob} />
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Dialogs */}
       <AddApplicationDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onApplicationAdded={handleApplicationAdded}
+      />
+
+      <EditApplicationDialog
+        application={editingApplication}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onApplicationUpdated={handleApplicationUpdated}
       />
     </div>
   )
