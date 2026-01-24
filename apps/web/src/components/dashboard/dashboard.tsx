@@ -1,17 +1,22 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from '@/lib/keyboard-shortcuts'
+import { CommandPalette } from '@/components/command-palette'
+import { KeyboardShortcutsHelp } from '@/components/keyboard-shortcuts-help'
 import { StatsCards } from './stats-cards'
 import { ApplicationCharts } from './application-charts'
 import { ApplicationTable } from './application-table'
 import { AddApplicationDialog } from './add-application-dialog'
 import { EditApplicationDialog } from './edit-application-dialog'
+import { RemindersPanel } from './reminders-panel'
+import { ActivityTimeline } from './activity-timeline'
 import { JobSearchPanel } from '@/components/job-search/job-search-panel'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Download, Sparkles, MessageSquare } from 'lucide-react'
+import { Plus, Download, Sparkles, MessageSquare, Database, Keyboard } from 'lucide-react'
 import Link from 'next/link'
 import { Application, ApplicationStats, JobResult } from '@/lib/types'
 import { toast } from 'sonner'
@@ -24,6 +29,15 @@ export function Dashboard() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingApplication, setEditingApplication] = useState<Application | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts([
+    ...DEFAULT_SHORTCUTS.map(s => ({
+      ...s,
+      action: s.key === 'n' ? () => setIsAddDialogOpen(true) : s.action
+    }))
+  ])
 
   const fetchStats = async () => {
     try {
@@ -57,6 +71,13 @@ export function Dashboard() {
     }
 
     loadData()
+  }, [])
+
+  // Listen for custom events
+  useEffect(() => {
+    const handleNewApplication = () => setIsAddDialogOpen(true)
+    window.addEventListener('open:new-application', handleNewApplication)
+    return () => window.removeEventListener('open:new-application', handleNewApplication)
   }, [])
 
   const handleApplicationAdded = () => {
@@ -180,6 +201,12 @@ export function Dashboard() {
         <div className="flex flex-wrap items-center gap-3">
           <ThemeToggle />
           <Button asChild variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
+            <Link href="/searches">
+              <Database className="h-4 w-4 mr-2" />
+              Searches
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
             <Link href="/ai-search">
               <MessageSquare className="h-4 w-4 mr-2" />
               AI Chat
@@ -188,6 +215,24 @@ export function Dashboard() {
           <Button onClick={handleExport} variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setShowShortcutsHelp(true)}
+            className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all"
+          >
+            <Keyboard className="h-4 w-4 mr-2" />
+            Shortcuts
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setShowShortcutsHelp(true)}
+            className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all"
+          >
+            <Keyboard className="h-4 w-4 mr-2" />
+            Shortcuts
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} size="lg" className="font-mono text-xs uppercase tracking-wider h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-[0_0_20px_-5px_hsl(var(--primary))]">
             <Plus className="h-4 w-4 mr-2" />
@@ -201,10 +246,12 @@ export function Dashboard() {
 
       {/* Tab Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="reminders">Reminders</TabsTrigger>
+          <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="ai-search" className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
             AI Job Search
@@ -270,6 +317,57 @@ export function Dashboard() {
           )}
         </TabsContent>
 
+        <TabsContent value="reminders" className="space-y-4">
+          <RemindersPanel />
+        </TabsContent>
+
+        <TabsContent value="activities" className="space-y-4">
+          {editingApplication && (
+            <ActivityTimeline
+              applicationId={editingApplication.id}
+              application={{
+                company: editingApplication.company,
+                jobTitle: editingApplication.jobTitle
+              }}
+            />
+          )}
+          {!editingApplication && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Activities</CardTitle>
+                <CardDescription>
+                  Select an application to view its activity timeline
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reminders" className="space-y-4">
+          <RemindersPanel />
+        </TabsContent>
+
+        <TabsContent value="activities" className="space-y-4">
+          {editingApplication ? (
+            <ActivityTimeline
+              applicationId={editingApplication.id}
+              application={{
+                company: editingApplication.company,
+                jobTitle: editingApplication.jobTitle
+              }}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Activities</CardTitle>
+                <CardDescription>
+                  Select an application to view its activity timeline, or use the Activities tab when viewing an application
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="ai-search" className="space-y-4">
           <JobSearchPanel onImportJob={handleImportJob} />
         </TabsContent>
@@ -288,6 +386,9 @@ export function Dashboard() {
         onOpenChange={setIsEditDialogOpen}
         onApplicationUpdated={handleApplicationUpdated}
       />
+
+      <CommandPalette />
+      <KeyboardShortcutsHelp open={showShortcutsHelp} onOpenChange={setShowShortcutsHelp} />
     </div>
   )
 }

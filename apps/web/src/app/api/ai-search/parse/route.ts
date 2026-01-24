@@ -20,6 +20,56 @@ export interface ParseResponse {
   error?: string
 }
 
+function clampResults(n: number | undefined) {
+  return Math.min(Math.max(n || 10, 1), 50)
+}
+
+function localParse(query: string): ParseResponse {
+  const q = query.trim()
+
+  // numResults (first integer found)
+  const numMatch = q.match(/\b(\d{1,2})\b/)
+  const numResults = clampResults(numMatch ? parseInt(numMatch[1], 10) : 10)
+
+  // location (after "in", "at", "near", or explicit Remote)
+  const remote = /\bremote\b/i.test(q)
+  let location = remote ? 'Remote' : ''
+  const locMatch =
+    q.match(/\b(?:in|at|near|around)\s+([^.,;]+)$/i) ||
+    q.match(/\b(?:in|at|near|around)\s+([^.,;]+?)(?:\s+posted|\s+within|\s+past|\s+last|\s+with|\s+and|\s+for)\b/i)
+  if (!location && locMatch?.[1]) location = locMatch[1].trim()
+  if (!location) location = 'United States'
+
+  // job role (remove leading verbs and location clause)
+  let jobRole = q
+    .replace(/^(find|search|look\s*for|show|give|get)\s+(me\s+)?/i, '')
+    .replace(/\bjobs?\b/i, '')
+    .replace(/\b(?:in|at|near|around)\s+.+$/i, '')
+    .replace(/\b(\d{1,2})\b/g, '')
+    .trim()
+  if (!jobRole) jobRole = 'Software Engineer'
+
+  // preferences (naive extraction)
+  const prefs: string[] = []
+  const prefMatches = q.match(/\b(entry[-\s]?level|junior|intern|senior|staff|principal|hybrid|on[-\s]?site|contract|full[-\s]?time|part[-\s]?time)\b/gi)
+  if (prefMatches) prefs.push(...prefMatches.map(x => x.toLowerCase()))
+  if (remote) prefs.push('remote')
+
+  const parsed: ParsedJobParams = {
+    jobRole,
+    location,
+    numResults,
+    additionalPreferences: Array.from(new Set(prefs)),
+    confidence: 0.55,
+  }
+
+  const interpretation = `Searching for ${parsed.numResults} "${parsed.jobRole}" positions in ${parsed.location}${
+    parsed.additionalPreferences?.length ? ` with preferences: ${parsed.additionalPreferences.join(', ')}` : ''
+  }`
+
+  return { success: true, parsedParams: parsed, interpretation }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ParseRequest = await request.json()
@@ -33,10 +83,8 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GOOGLE_API_KEY
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'Google API key not configured' },
-        { status: 503 }
-      )
+      // Fallback: keep app usable without external AI
+      return NextResponse.json(localParse(body.query))
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
@@ -64,9 +112,16 @@ Examples:
 
 Return ONLY valid JSON, no markdown formatting or explanation.`
 
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text().trim()
+    let text = ''
+    try {
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      text = response.text().trim()
+    } catch (e) {
+      // Fallback on expired/invalid key or network issues
+      console.error('Gemini generateContent failed, falling back to local parser:', e)
+      return NextResponse.json(localParse(body.query))
+    }
 
     // Clean up any markdown formatting that might slip through
     let cleanedText = text
@@ -89,7 +144,7 @@ Return ONLY valid JSON, no markdown formatting or explanation.`
       }
 
       // Ensure numResults is within bounds
-      parsed.numResults = Math.min(Math.max(parsed.numResults || 10, 1), 50)
+      parsed.numResults = clampResults(parsed.numResults)
 
       // Generate a human-readable interpretation
       const interpretation = `Searching for ${parsed.numResults} "${parsed.jobRole}" positions in ${parsed.location}${
@@ -105,20 +160,11 @@ Return ONLY valid JSON, no markdown formatting or explanation.`
       })
     } catch {
       console.error('Failed to parse Gemini response:', cleanedText)
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to parse the query. Please try rephrasing your request.',
-        interpretation: cleanedText
-      })
+      // Fallback if model returns non-JSON
+      return NextResponse.json(localParse(body.query))
     }
   } catch (error) {
     console.error('Gemini API error:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to process your query'
-      },
-      { status: 500 }
-    )
+    return NextResponse.json(localParse(''))
   }
 }

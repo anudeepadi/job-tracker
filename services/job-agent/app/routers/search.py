@@ -366,17 +366,21 @@ async def run_skills_analysis(
             }
         )
 
-    # Return the skills analysis from the original search
-    # In a full implementation, this could re-run the skills agent with custom parameters
+    # Parse skills analysis from agent output
+    from app.services.skills_parser import parse_skills_analysis
+    
+    skills_analysis_text = results.get("skills_analysis", "")
+    parsed_skills = parse_skills_analysis(skills_analysis_text) if skills_analysis_text else {}
+    
     return SkillsAnalysisResponse(
         job_id=request.job_id,
         status=JobSearchStatus.COMPLETED,
-        total_skills_identified=0,  # Would need parsing
-        skills_by_category={},  # Would need parsing
-        priority_skills=[],  # Would need parsing
-        quick_start_plan=None,
-        long_term_plan=None,
-        raw_output=results.get("skills_analysis"),
+        total_skills_identified=parsed_skills.get("total_skills_identified", 0),
+        skills_by_category=parsed_skills.get("skills_by_category", {}),
+        priority_skills=parsed_skills.get("priority_skills", []),
+        quick_start_plan=parsed_skills.get("quick_start_plan"),
+        long_term_plan=parsed_skills.get("long_term_plan"),
+        raw_output=skills_analysis_text,
     )
 
 

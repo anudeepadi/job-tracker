@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getClientIdentifier, rateLimit } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const identifier = getClientIdentifier(request)
+  const limitResult = await rateLimit(identifier, { windowMs: 60000, maxRequests: 100 })
+  
+  if (!limitResult.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': '100',
+          'X-RateLimit-Remaining': limitResult.remaining.toString(),
+          'X-RateLimit-Reset': limitResult.resetTime.toString()
+        }
+      }
+    )
+  }
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -24,10 +42,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // SQLite doesn't support case-insensitive mode, so we use contains without mode
+      // For case-insensitive search in SQLite, we'd need to use raw SQL or handle it differently
       where.OR = [
-        { company: { contains: search, mode: 'insensitive' } },
-        { jobTitle: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } }
+        { company: { contains: search } },
+        { jobTitle: { contains: search } },
+        { location: { contains: search } }
       ]
     }
 
@@ -65,8 +85,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching applications:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch applications' },
+      { error: 'Failed to fetch applications', details: errorMessage },
       { status: 500 }
     )
   }
