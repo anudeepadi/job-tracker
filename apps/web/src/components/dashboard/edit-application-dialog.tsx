@@ -52,6 +52,25 @@ interface ApplicationFormData {
   contactEmail?: string
   appliedDate: string
   notes?: string
+  jobDescription?: string
+}
+
+function extractJobDescription(notes: string | null | undefined): { baseNotes: string; jobDescription: string } {
+  if (!notes) return { baseNotes: '', jobDescription: '' }
+  const marker = '---JOB_DESCRIPTION---'
+  const idx = notes.indexOf(marker)
+  if (idx === -1) return { baseNotes: notes, jobDescription: '' }
+  const baseNotes = notes.slice(0, idx).trimEnd()
+  const jobDescription = notes.slice(idx + marker.length).trim()
+  return { baseNotes, jobDescription }
+}
+
+function mergeNotesWithJobDescription(baseNotes: string, jobDescription: string): string {
+  const trimmedBase = (baseNotes || '').trim()
+  const trimmedJD = (jobDescription || '').trim()
+  if (!trimmedJD) return trimmedBase
+  if (!trimmedBase) return `---JOB_DESCRIPTION---\n${trimmedJD}`
+  return `${trimmedBase}\n\n---JOB_DESCRIPTION---\n${trimmedJD}`
 }
 
 export function EditApplicationDialog({
@@ -61,6 +80,7 @@ export function EditApplicationDialog({
   onApplicationUpdated
 }: EditApplicationDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [generatingResume, setGeneratingResume] = useState(false)
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<ApplicationFormData>()
 
@@ -74,6 +94,7 @@ export function EditApplicationDialog({
   // Populate form when application changes
   useEffect(() => {
     if (application) {
+      const extracted = extractJobDescription(application.notes || '')
       reset({
         company: application.company,
         jobTitle: application.jobTitle,
@@ -89,7 +110,8 @@ export function EditApplicationDialog({
         contactPerson: application.contactPerson || '',
         contactEmail: application.contactEmail || '',
         appliedDate: new Date(application.appliedDate).toISOString().split('T')[0],
-        notes: application.notes || '',
+        notes: extracted.baseNotes,
+        jobDescription: extracted.jobDescription,
       })
     }
   }, [application, reset])
@@ -104,6 +126,7 @@ export function EditApplicationDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
+          notes: mergeNotesWithJobDescription(data.notes || '', data.jobDescription || ''),
           salaryMin: data.salaryMin ? parseInt(data.salaryMin.toString()) : null,
           salaryMax: data.salaryMax ? parseInt(data.salaryMax.toString()) : null,
         })
@@ -121,6 +144,28 @@ export function EditApplicationDialog({
       toast.error('Failed to update application')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGenerateResume = async () => {
+    if (!application) return
+    setGeneratingResume(true)
+    try {
+      const res = await fetch(`/api/applications/${application.id}/resume/generate`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || 'Failed to generate resume')
+      }
+
+      toast.success(`Generated: ${data.fileName}`)
+      if (data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank', 'noopener,noreferrer')
+      }
+    } catch (e) {
+      console.error('Resume generation failed:', e)
+      toast.error(e instanceof Error ? e.message : 'Failed to generate resume')
+    } finally {
+      setGeneratingResume(false)
     }
   }
 
@@ -343,7 +388,25 @@ export function EditApplicationDialog({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="jobDescription">Job Description (used for resume tailoring)</Label>
+            <Textarea
+              id="jobDescription"
+              {...register('jobDescription')}
+              placeholder="Paste the job description here. This drives keyword matching and role-specific tailoring."
+              className="min-h-[220px]"
+            />
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGenerateResume}
+              disabled={!application || generatingResume}
+            >
+              {generatingResume ? 'Generating ATS Resume...' : 'Generate ATS Resume (1 page)'}
+            </Button>
             <Button
               type="button"
               variant="outline"

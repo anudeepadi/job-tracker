@@ -91,10 +91,12 @@ else
 fi
 echo ""
 
-# Step 5: Generate Prisma client
-echo -e "${YELLOW}Step 5: Generating Prisma client...${NC}"
+# Step 5: Generate Prisma client (apps/web)
+echo -e "${YELLOW}Step 5: Generating Prisma client (apps/web)...${NC}"
 if command -v npx &> /dev/null; then
+    cd "$ROOT_DIR/apps/web"
     npx prisma generate 2>/dev/null || echo -e "${YELLOW}Note: Prisma client generation skipped (optional)${NC}"
+    cd "$ROOT_DIR"
 else
     echo -e "${YELLOW}Note: npx not available, skipping Prisma generation${NC}"
 fi

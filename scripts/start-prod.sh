@@ -26,15 +26,20 @@ if [ ! -f "$ROOT_DIR/package.json" ]; then
     exit 1
 fi
 
-# Check if .env file exists
-if [ ! -f "$ROOT_DIR/.env" ]; then
-    echo -e "${RED}Error: .env file not found${NC}"
-    echo "Please run setup first to initialize the project"
-    exit 1
+# Load environment variables if possible, but don't fail hard on permission issues.
+if [ -f "$ROOT_DIR/.env" ] && [ -r "$ROOT_DIR/.env" ]; then
+    # shellcheck disable=SC1090
+    set -a
+    source "$ROOT_DIR/.env"
+    set +a
+elif [ -f "$ROOT_DIR/.env" ] && [ ! -r "$ROOT_DIR/.env" ]; then
+    echo -e "${YELLOW}Warning: $ROOT_DIR/.env exists but is not readable (permission issue).${NC}"
+    echo -e "${YELLOW}Continuing without sourcing .env. Set env vars in your shell or fix file permissions.${NC}"
+    echo ""
+else
+    echo -e "${YELLOW}Warning: .env not found. Continuing without sourcing .env.${NC}"
+    echo ""
 fi
-
-# Load environment variables
-export $(cat "$ROOT_DIR/.env" | grep -v '^#' | xargs)
 
 # Verify Python virtual environment exists
 if [ ! -d "$ROOT_DIR/services/job-agent/venv" ]; then
@@ -70,34 +75,39 @@ trap cleanup SIGINT SIGTERM EXIT
 echo -e "${YELLOW}Starting production servers...${NC}"
 echo ""
 
+# Allow overriding ports via environment variables.
+# Defaults remain standard for production.
+PYTHON_PORT="${PYTHON_PORT:-8000}"
+WEB_PORT="${WEB_PORT:-3000}"
+
 # Check port availability
-if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    echo -e "${RED}Error: Port 8000 is already in use${NC}"
+if lsof -Pi :"$PYTHON_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo -e "${RED}Error: Port ${PYTHON_PORT} is already in use${NC}"
     echo "Please stop other services first"
     exit 1
 fi
 
-if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    echo -e "${RED}Error: Port 3000 is already in use${NC}"
+if lsof -Pi :"$WEB_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo -e "${RED}Error: Port ${WEB_PORT} is already in use${NC}"
     echo "Please stop other services first"
     exit 1
 fi
 
 # Start Python FastAPI backend (production mode)
-echo -e "${BLUE}Starting Python FastAPI backend (port 8000)...${NC}"
+echo -e "${BLUE}Starting Python FastAPI backend (port ${PYTHON_PORT})...${NC}"
 cd "$ROOT_DIR/services/job-agent"
 source venv/bin/activate
 export PYTHONPATH="$ROOT_DIR/services/job-agent:$PYTHONPATH"
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 &
+python -m uvicorn app.main:app --host 0.0.0.0 --port "$PYTHON_PORT" --workers 4 &
 PYTHON_PID=$!
 echo -e "${GREEN}Python backend started (PID: $PYTHON_PID)${NC}"
 sleep 2  # Wait for backend to start
 echo ""
 
 # Start Next.js frontend (production mode)
-echo -e "${BLUE}Starting Next.js frontend (port 3000)...${NC}"
+echo -e "${BLUE}Starting Next.js frontend (port ${WEB_PORT})...${NC}"
 cd "$ROOT_DIR/apps/web"
-npm run start &
+PYTHON_BACKEND_URL="http://localhost:${PYTHON_PORT}" PORT="$WEB_PORT" npm run start &
 NEXTJS_PID=$!
 echo -e "${GREEN}Next.js frontend started (PID: $NEXTJS_PID)${NC}"
 echo ""
@@ -107,9 +117,9 @@ echo -e "${GREEN}Production servers are running${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Services:${NC}"
-echo "  - Python Backend: http://localhost:8000"
-echo "  - Python Docs:    http://localhost:8000/docs"
-echo "  - Next.js:        http://localhost:3000"
+echo "  - Python Backend: http://localhost:${PYTHON_PORT}"
+echo "  - Python Docs:    http://localhost:${PYTHON_PORT}/docs"
+echo "  - Next.js:        http://localhost:${WEB_PORT}"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
 echo ""

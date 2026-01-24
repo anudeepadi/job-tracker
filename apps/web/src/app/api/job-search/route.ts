@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'
 
@@ -95,6 +96,7 @@ async function pollForResults(jobId: string): Promise<{ status: string; results?
 
 // POST - Start a new job search
 export async function POST(request: NextRequest) {
+  let dbSearchId: string | null = null
   try {
     const body: JobSearchRequest = await request.json()
 
@@ -105,6 +107,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Step 0: Create a DB record so this search shows up in history (even if it fails)
+    const dbSearch = await prisma.jobSearch.create({
+      data: {
+        role: body.job_role,
+        location: body.location,
+        numResults: body.num_results || 10,
+        status: 'running',
+      },
+      select: { id: true },
+    })
+    dbSearchId = dbSearch.id
 
     // Step 1: Initiate the search with the Python backend
     // Python backend uses 'role' not 'job_role' and endpoint is /api/search
@@ -123,6 +137,14 @@ export async function POST(request: NextRequest) {
     if (!searchResponse.ok) {
       const errorText = await searchResponse.text()
       console.error('Python backend error:', errorText)
+      await prisma.jobSearch.update({
+        where: { id: dbSearch.id },
+        data: {
+          status: 'failed',
+          errorMessage: errorText,
+          completedAt: new Date(),
+        },
+      })
       return NextResponse.json(
         { error: 'Failed to start job search', details: errorText },
         { status: searchResponse.status }
@@ -133,6 +155,14 @@ export async function POST(request: NextRequest) {
     const jobId = searchData.job_id
 
     if (!jobId) {
+      await prisma.jobSearch.update({
+        where: { id: dbSearch.id },
+        data: {
+          status: 'failed',
+          errorMessage: 'No job_id returned from backend',
+          completedAt: new Date(),
+        },
+      })
       return NextResponse.json(
         { error: 'No job_id returned from backend' },
         { status: 500 }
@@ -143,6 +173,22 @@ export async function POST(request: NextRequest) {
     const pollResult = await pollForResults(jobId)
 
     if (pollResult.status === 'error') {
+      await prisma.jobSearch.update({
+        where: { id: dbSearch.id },
+        data: {
+          status: 'failed',
+          errorMessage: pollResult.error || 'Job search failed',
+          completedAt: new Date(),
+          agentOutputs: {
+            create: {
+              agentType: 'job_searcher',
+              prompt: `role=${body.job_role} location=${body.location}`,
+              output: pollResult.error || 'Job search failed',
+              metadata: JSON.stringify({ source: 'Adzuna', backendJobId: jobId }),
+            },
+          },
+        },
+      })
       return NextResponse.json(
         {
           status: 'error',
@@ -154,6 +200,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Persist results
+    const resultsToPersist = (pollResult.results || []).map((r) => ({
+      searchId: dbSearch.id,
+      title: r.title,
+      company: r.company,
+      location: r.location || null,
+      salary: r.salary_range || null,
+      description: r.description || null,
+      applyUrl: r.url || null,
+      sourceUrl: r.url || null,
+      postedDate: r.posted_date || null,
+      jobType: null,
+      remote: r.location?.toLowerCase?.().includes('remote') ?? null,
+    }))
+
+    if (resultsToPersist.length) {
+      await prisma.jobResult.createMany({ data: resultsToPersist })
+    }
+
+    await prisma.jobSearch.update({
+      where: { id: dbSearch.id },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        agentOutputs: {
+          create: {
+            agentType: 'job_searcher',
+            prompt: `role=${body.job_role} location=${body.location}`,
+            output: `Found ${pollResult.results?.length || 0} results`,
+            metadata: JSON.stringify({ source: 'Adzuna', backendJobId: jobId }),
+          },
+        },
+      },
+    })
+
     // Step 3: Return results
     return NextResponse.json({
       status: 'completed',
@@ -162,6 +243,21 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error proxying job search request:', error)
+
+    if (dbSearchId) {
+      try {
+        await prisma.jobSearch.update({
+          where: { id: dbSearchId },
+          data: {
+            status: 'failed',
+            errorMessage: error instanceof Error ? error.message : 'Internal server error',
+            completedAt: new Date(),
+          },
+        })
+      } catch (e) {
+        console.error('Failed to mark db search as failed:', e)
+      }
+    }
 
     // Check if it's a connection error to the Python backend
     if (error instanceof TypeError && error.message.includes('fetch')) {

@@ -6,8 +6,87 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// User & Authentication Models
+// =============================================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sessions      Session[]
+  applications  Application[]
+  preferences   UserPreference[]
+  applyTemplates ApplyTemplate[]
+  searchPresets SearchPreset[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String
+  value     String // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+model ApplyTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  personalInfo String? // JSON string
+  coverLetter String?
+  resumePath  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SearchPreset {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  filters   String // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // =============================================================================
@@ -34,12 +113,18 @@ model Application {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // User relation - for multi-user support
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // AI Search Integration - links to the JobSearch that discovered this opportunity
   aiSearchId String?
   aiSearch   JobSearch? @relation(fields: [aiSearchId], references: [id], onDelete: SetNull)
 
   activities Activity[]
   reminders  Reminder[]
+
+  @@index([userId])
 }
 
 model Activity {
