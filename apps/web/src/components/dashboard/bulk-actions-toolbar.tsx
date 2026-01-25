@@ -54,9 +54,9 @@ export function BulkActionsToolbar({
             <SelectValue placeholder="Update Status" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map(status => (
-              <SelectItem key={status} value={status}>
-                Set Status: {status}
+            {STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                Set Status: {option.label}
               </SelectItem>
             ))}
           </SelectContent>

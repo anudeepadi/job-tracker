@@ -293,8 +293,8 @@ export function ApplicationTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              {STATUS_OPTIONS.map(status => (
-                <SelectItem key={status} value={status}>{status}</SelectItem>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -304,8 +304,8 @@ export function ApplicationTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Priority</SelectItem>
-              {PRIORITY_OPTIONS.map(priority => (
-                <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+              {PRIORITY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -324,8 +324,8 @@ export function ApplicationTable({
                 <SelectValue placeholder="Update Status" />
               </SelectTrigger>
               <SelectContent>
-                {STATUS_OPTIONS.map(status => (
-                  <SelectItem key={status} value={status}>Set Status: {status}</SelectItem>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>Set Status: {option.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -555,18 +555,18 @@ export function ApplicationTable({
                       </Badge>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="bg-card border-primary/10">
-                      {STATUS_OPTIONS.map((status) => (
+                      {STATUS_OPTIONS.map((option) => (
                         <DropdownMenuItem
-                          key={status}
-                          onClick={() => handleStatusChange(application.id, status)}
+                          key={option.value}
+                          onClick={() => handleStatusChange(application.id, option.value)}
                           disabled={loading === application.id}
                           className="font-mono text-xs"
                         >
                           <span
                             className="w-2 h-2 rounded-full mr-2"
-                            style={{ backgroundColor: STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#a1a1aa' }}
+                            style={{ backgroundColor: STATUS_COLORS[option.value as keyof typeof STATUS_COLORS] || '#a1a1aa' }}
                           />
-                          {status}
+                          {option.label}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -587,18 +587,18 @@ export function ApplicationTable({
                       </Badge>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="bg-card border-primary/10">
-                      {PRIORITY_OPTIONS.map((priority) => (
+                      {PRIORITY_OPTIONS.map((option) => (
                         <DropdownMenuItem
-                          key={priority}
-                          onClick={() => handlePriorityChange(application.id, priority)}
+                          key={option.value}
+                          onClick={() => handlePriorityChange(application.id, option.value)}
                           disabled={loading === application.id}
                           className={`font-mono text-xs ${
-                            priority === 'High' ? 'text-red-500' :
-                            priority === 'Medium' ? 'text-yellow-500' :
+                            option.value === 'High' ? 'text-red-500' :
+                            option.value === 'Medium' ? 'text-yellow-500' :
                             'text-green-500'
                           }`}
                         >
-                          {priority}
+                          {option.label}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

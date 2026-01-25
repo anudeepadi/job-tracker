@@ -159,9 +159,9 @@ export function AddApplicationDialog({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LOCATION_TYPE_OPTIONS.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                  {LOCATION_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -220,9 +220,9 @@ export function AddApplicationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
+                  {STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -239,9 +239,9 @@ export function AddApplicationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRIORITY_OPTIONS.map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {priority}
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -255,9 +255,9 @@ export function AddApplicationDialog({
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SOURCE_OPTIONS.map((source) => (
-                    <SelectItem key={source} value={source}>
-                      {source}
+                  {SOURCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
