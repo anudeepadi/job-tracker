@@ -1,0 +1,78 @@
+# Railway Ignore File
+# Files and directories that should not be deployed to Railway
+
+# Documentation
+*.md
+!README.md
+DELIVERABLES.md
+DEPLOYMENT_GUIDE.md
+DOCKER_SETUP.md
+DOCKER_QUICK_START.md
+IMPLEMENTATION_*.md
+SCRIPTS_*.md
+START_SERVERS.md
+REMOTE_DB_SETUP.md
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node modules (will be installed during build)
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+.next/
+dist/
+build/
+out/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.pytest_cache/
+
+# Data directories (use external storage for production)
+data/agent-outputs/
+data/generated-resumes/
+
+# Orchestration (development only)
+orchestration/
+
+# Scripts (already in package.json)
+scripts/
+
+# Docker files (Railway uses nixpacks)
+docker-compose.yml
+Dockerfile
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
