@@ -3,14 +3,26 @@ import { prisma } from '@/lib/prisma'
 
 // GET /api/applications/[id]/reminders - List reminders for a specific application
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params
   try {
-    // Verify application exists
-    const application = await prisma.application.findUnique({
-      where: { id: params.id }
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify application exists and user owns it
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
     })
 
     if (!application) {
@@ -42,6 +54,15 @@ export async function POST(
 ) {
   const params = await props.params
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     if (!body.title || !body.dueDate) {
@@ -51,9 +72,12 @@ export async function POST(
       )
     }
 
-    // Verify application exists
-    const application = await prisma.application.findUnique({
-      where: { id: params.id }
+    // Verify application exists and user owns it
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
     })
 
     if (!application) {

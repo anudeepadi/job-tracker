@@ -20,7 +20,7 @@ node_modules/
 .pnp.js
 yarn.lock
 package-lock.json
-pnpm-lock.yaml
+# pnpm-lock.yaml should be committed for reproducible installs
 bun.lockb
 
 # Python dependencies
@@ -74,6 +74,7 @@ build/
 # IDE specific files
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -148,6 +149,11 @@ Desktop.ini
 
 # Linux
 .directory
+
+# ==========================================
+# Accidental artifacts
+# ==========================================
+services/job-agent/Users/
 
 # ==========================================
 # Docker

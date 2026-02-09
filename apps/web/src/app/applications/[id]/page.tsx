@@ -1,5 +1,8 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+
+// Force dynamic rendering - this page requires database access
+export const dynamic = 'force-dynamic'
 import { ApplicationDetailClient } from '@/components/dashboard/application-detail-client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

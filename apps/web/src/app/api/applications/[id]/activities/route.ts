@@ -8,13 +8,25 @@ export async function GET(
 ) {
   const params = await props.params
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '100')
     const type = searchParams.get('type')
 
-    // Verify application exists
-    const application = await prisma.application.findUnique({
-      where: { id: params.id }
+    // Verify application exists and user owns it
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
     })
 
     if (!application) {
@@ -53,6 +65,15 @@ export async function POST(
 ) {
   const params = await props.params
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     if (!body.type || !body.description || !body.date) {
@@ -62,9 +83,12 @@ export async function POST(
       )
     }
 
-    // Verify application exists
-    const application = await prisma.application.findUnique({
-      where: { id: params.id }
+    // Verify application exists and user owns it
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
     })
 
     if (!application) {

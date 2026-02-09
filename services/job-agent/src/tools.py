@@ -23,9 +23,15 @@ from src.config import (
     LINKEDIN_RAPIDAPI_KEY,
     LINKEDIN_BASE_URL,
     LINKEDIN_RAPIDAPI_HOST,
+    JSEARCH_RAPIDAPI_KEY,
+    JSEARCH_BASE_URL,
+    JSEARCH_RAPIDAPI_HOST,
+    REMOTEOK_ENABLED,
+    REMOTEOK_BASE_URL,
     API_TIMEOUT,
     API_MAX_RETRIES,
     API_RETRY_DELAY,
+    API_RATE_LIMIT_DELAY,
 )
 
 
@@ -464,10 +470,385 @@ Job Listings:
 
 
 # =============================================================================
+# CREWAI TOOL: JSEARCH JOB SEARCH (RapidAPI)
+# =============================================================================
+
+def _format_jsearch_job(job: Dict[str, Any]) -> str:
+    """
+    Format a JSearch job listing into a readable string.
+
+    Args:
+        job: Job data dictionary from JSearch API
+
+    Returns:
+        Formatted job listing string
+    """
+    title = job.get('job_title', 'N/A')
+    company = job.get('employer_name', 'N/A')
+    location = job.get('job_city', '')
+    state = job.get('job_state', '')
+    country = job.get('job_country', '')
+
+    # Build location string
+    location_parts = [p for p in [location, state, country] if p]
+    location_str = ', '.join(location_parts) if location_parts else 'N/A'
+
+    description = job.get('job_description', 'No description available')
+    url = job.get('job_apply_link', job.get('job_google_link', 'N/A'))
+    posted = job.get('job_posted_at_datetime_utc', 'N/A')
+    employment_type = job.get('job_employment_type', 'Not specified')
+    is_remote = job.get('job_is_remote', False)
+
+    # Add remote indicator
+    if is_remote:
+        location_str = f"Remote - {location_str}"
+
+    # Truncate description
+    max_description_length = 500
+    if len(description) > max_description_length:
+        description = description[:max_description_length] + "..."
+
+    formatted = f"""
+<job>
+    <title>{title}</title>
+    <company>{company}</company>
+    <location>{location_str}</location>
+    <employment_type>{employment_type}</employment_type>
+    <posted_date>{posted}</posted_date>
+    <description>
+        {description}
+    </description>
+    <apply_url>{url}</apply_url>
+    <source>JSearch (Multi-Board)</source>
+</job>
+"""
+    return formatted.strip()
+
+
+@tool("JSearch Job Search Tool")
+def search_jsearch_jobs(role: str, location: str, num_results: int) -> str:
+    """
+    Search for job listings across multiple job boards using JSearch API (via RapidAPI).
+
+    JSearch aggregates jobs from Indeed, LinkedIn, Glassdoor, ZipRecruiter, BeBee, and more.
+
+    Args:
+        role: Job title/role to search for (e.g., "Data Scientist")
+        location: Location to search in (e.g., "San Francisco, CA")
+        num_results: Number of job listings to return (1-50)
+
+    Returns:
+        Formatted string containing job listings or error message
+    """
+
+    # Validate input
+    input_data = {
+        'role': role,
+        'location': location,
+        'num_results': num_results
+    }
+
+    is_valid, error_message = _validate_search_input(input_data)
+    if not is_valid:
+        return f"""
+❌ ERROR: Invalid input parameters.
+
+{error_message}
+
+Please provide valid parameters:
+- role: Job title (non-empty string)
+- location: Search location (non-empty string)
+- num_results: Number of results (1-50)
+"""
+
+    # Check API credentials
+    if not JSEARCH_RAPIDAPI_KEY:
+        return """
+⚠️  JSearch API not configured.
+
+The JSearch Job Search Tool requires a RapidAPI key.
+To enable JSearch job search:
+1. Sign up at https://rapidapi.com
+2. Subscribe to the JSearch API
+3. Add your key to .env: JSEARCH_RAPIDAPI_KEY=your_key
+
+Falling back to other job search tools.
+"""
+
+    # Build request
+    url = f"{JSEARCH_BASE_URL}/search"
+    headers = {
+        "X-RapidAPI-Key": JSEARCH_RAPIDAPI_KEY,
+        "X-RapidAPI-Host": JSEARCH_RAPIDAPI_HOST
+    }
+
+    params = {
+        "query": f"{role} in {location}",
+        "page": "1",
+        "num_pages": "1",
+        "date_posted": "all"
+    }
+
+    print(f"\n🔍 Searching JSearch for {num_results} '{role}' jobs in {location}...")
+
+    try:
+        response = requests.get(url, headers=headers, params=params, timeout=API_TIMEOUT)
+        response.raise_for_status()
+        jobs_data = response.json()
+
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 401:
+            return "❌ ERROR: Invalid JSearch API key. Please check your JSEARCH_RAPIDAPI_KEY."
+        elif response.status_code == 429:
+            return "❌ ERROR: JSearch API rate limit exceeded. Please try again later."
+        elif response.status_code == 403:
+            return "❌ ERROR: JSearch API access forbidden. Check your subscription status."
+        else:
+            return f"❌ ERROR: JSearch API returned status {response.status_code}: {str(e)}"
+
+    except requests.exceptions.Timeout:
+        return "❌ ERROR: JSearch API request timed out. Please try again."
+
+    except requests.exceptions.RequestException as e:
+        return f"❌ ERROR: Failed to connect to JSearch API: {str(e)}"
+
+    except json.JSONDecodeError:
+        return "❌ ERROR: Invalid JSON response from JSearch API"
+
+    # Parse results
+    results = jobs_data.get('data', [])
+
+    if not results:
+        return f"""
+ℹ️  No JSearch job listings found for '{role}' in {location}.
+
+Suggestions:
+- Try a broader search term
+- Try a different location format
+- Check if the role name is commonly used
+"""
+
+    # Limit to requested number
+    results = results[:num_results]
+
+    # Format jobs
+    formatted_jobs = []
+    for i, job in enumerate(results, 1):
+        formatted_job = _format_jsearch_job(job)
+        formatted_jobs.append(f"[JSearch Job {i}/{len(results)}]\n{formatted_job}")
+
+    output = f"""
+✅ Successfully found {len(results)} JSearch job listings
+
+Search Parameters:
+- Role: {role}
+- Location: {location}
+- Source: JSearch (Aggregates Indeed, LinkedIn, Glassdoor, ZipRecruiter, etc.)
+
+Job Listings:
+{"=" * 80}
+
+{"=" * 80}
+
+""".join(formatted_jobs)
+
+    print(f"✅ Found {len(results)} JSearch job listings!")
+
+    # Add rate limit delay
+    time.sleep(API_RATE_LIMIT_DELAY)
+
+    return output
+
+
+# =============================================================================
+# CREWAI TOOL: REMOTEOK JOB SEARCH
+# =============================================================================
+
+def _format_remoteok_job(job: Dict[str, Any]) -> str:
+    """
+    Format a RemoteOK job listing into a readable string.
+
+    Args:
+        job: Job data dictionary from RemoteOK API
+
+    Returns:
+        Formatted job listing string
+    """
+    title = job.get('position', 'N/A')
+    company = job.get('company', 'N/A')
+    location = job.get('location', 'Remote')
+    description = job.get('description', 'No description available')
+    url = job.get('url', 'N/A')
+    if url != 'N/A' and not url.startswith('http'):
+        url = f"https://remoteok.com{url}"
+
+    posted = job.get('date', 'N/A')
+    tags = job.get('tags', [])
+
+    # Truncate description
+    max_description_length = 500
+    if len(description) > max_description_length:
+        description = description[:max_description_length] + "..."
+
+    # Format tags as skills
+    skills = ', '.join(tags[:10]) if tags else 'Not specified'
+
+    formatted = f"""
+<job>
+    <title>{title}</title>
+    <company>{company}</company>
+    <location>{location}</location>
+    <skills>{skills}</skills>
+    <posted_date>{posted}</posted_date>
+    <description>
+        {description}
+    </description>
+    <apply_url>{url}</apply_url>
+    <source>RemoteOK</source>
+</job>
+"""
+    return formatted.strip()
+
+
+@tool("RemoteOK Job Search Tool")
+def search_remoteok_jobs(role: str, location: str, num_results: int) -> str:
+    """
+    Search for remote job listings using the RemoteOK API.
+
+    RemoteOK specializes in remote-first positions across tech, design, marketing, and more.
+    This API is free and doesn't require authentication.
+
+    Args:
+        role: Job title/role to search for (e.g., "Software Engineer")
+        location: Location preference (note: most jobs are remote, but can filter)
+        num_results: Number of job listings to return (1-50)
+
+    Returns:
+        Formatted string containing remote job listings or error message
+    """
+
+    # Validate input
+    input_data = {
+        'role': role,
+        'location': location,
+        'num_results': num_results
+    }
+
+    is_valid, error_message = _validate_search_input(input_data)
+    if not is_valid:
+        return f"""
+❌ ERROR: Invalid input parameters.
+
+{error_message}
+
+Please provide valid parameters:
+- role: Job title (non-empty string)
+- location: Search location (non-empty string)
+- num_results: Number of results (1-50)
+"""
+
+    # Check if RemoteOK is enabled
+    if not REMOTEOK_ENABLED:
+        return """
+⚠️  RemoteOK is disabled.
+
+To enable RemoteOK job search, set REMOTEOK_ENABLED=true in your .env file.
+This API is free and doesn't require authentication.
+"""
+
+    print(f"\n🔍 Searching RemoteOK for {num_results} remote '{role}' jobs...")
+
+    try:
+        # RemoteOK API returns all jobs, we filter client-side
+        response = requests.get(REMOTEOK_BASE_URL, timeout=API_TIMEOUT)
+        response.raise_for_status()
+        jobs_data = response.json()
+
+    except requests.exceptions.HTTPError as e:
+        return f"❌ ERROR: RemoteOK API returned status {response.status_code}: {str(e)}"
+
+    except requests.exceptions.Timeout:
+        return "❌ ERROR: RemoteOK API request timed out. Please try again."
+
+    except requests.exceptions.RequestException as e:
+        return f"❌ ERROR: Failed to connect to RemoteOK API: {str(e)}"
+
+    except json.JSONDecodeError:
+        return "❌ ERROR: Invalid JSON response from RemoteOK API"
+
+    # Filter jobs by role (case-insensitive)
+    # Skip the first element (it's API metadata)
+    all_jobs = jobs_data[1:] if len(jobs_data) > 1 and isinstance(jobs_data[0], dict) else jobs_data
+
+    role_lower = role.lower()
+    filtered_jobs = []
+
+    for job in all_jobs:
+        if not isinstance(job, dict):
+            continue
+
+        position = job.get('position', '').lower()
+        company = job.get('company', '').lower()
+        description = job.get('description', '').lower()
+        tags = [tag.lower() for tag in job.get('tags', [])]
+
+        # Check if role matches position, company, description, or tags
+        if (role_lower in position or
+            role_lower in description or
+            any(role_lower in tag for tag in tags)):
+            filtered_jobs.append(job)
+
+        if len(filtered_jobs) >= num_results:
+            break
+
+    if not filtered_jobs:
+        return f"""
+ℹ️  No RemoteOK job listings found for '{role}'.
+
+Suggestions:
+- Try a broader search term (e.g., "Developer" instead of "Senior React Developer")
+- Try related terms (e.g., "Engineer", "Designer", "Manager")
+- RemoteOK focuses on remote-first tech positions
+"""
+
+    # Limit to requested number
+    results = filtered_jobs[:num_results]
+
+    # Format jobs
+    formatted_jobs = []
+    for i, job in enumerate(results, 1):
+        formatted_job = _format_remoteok_job(job)
+        formatted_jobs.append(f"[RemoteOK Job {i}/{len(results)}]\n{formatted_job}")
+
+    output = f"""
+✅ Successfully found {len(results)} RemoteOK job listings
+
+Search Parameters:
+- Role: {role}
+- Source: RemoteOK (Remote-first positions)
+
+Job Listings:
+{"=" * 80}
+
+{"=" * 80}
+
+""".join(formatted_jobs)
+
+    print(f"✅ Found {len(results)} RemoteOK job listings!")
+
+    # Add rate limit delay
+    time.sleep(API_RATE_LIMIT_DELAY)
+
+    return output
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
 __all__ = [
     "search_jobs",
     "search_linkedin_jobs",
+    "search_jsearch_jobs",
+    "search_remoteok_jobs",
 ]

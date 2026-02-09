@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+
+// Force dynamic rendering - this page requires database access
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

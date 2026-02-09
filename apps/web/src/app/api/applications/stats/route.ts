@@ -1,8 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const [
       totalApplications,
       statusCounts,
@@ -10,33 +19,39 @@ export async function GET() {
       monthlyStats,
       sourceStats
     ] = await Promise.all([
-      prisma.application.count(),
-      
+      prisma.application.count({
+        where: { userId }
+      }),
+
       prisma.application.groupBy({
         by: ['status'],
-        _count: { id: true }
+        _count: { id: true },
+        where: { userId }
       }),
-      
+
       prisma.application.count({
         where: {
+          userId,
           appliedDate: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }
         }
       }),
-      
+
       prisma.application.count({
         where: {
+          userId,
           appliedDate: {
             gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
           }
         }
       }),
-      
+
       prisma.application.groupBy({
         by: ['source'],
         _count: { id: true },
         where: {
+          userId,
           source: { not: null }
         }
       })
@@ -53,6 +68,7 @@ export async function GET() {
       : 0
 
     const recentApplications = await prisma.application.findMany({
+      where: { userId },
       orderBy: { appliedDate: 'desc' },
       take: 30,
       select: {

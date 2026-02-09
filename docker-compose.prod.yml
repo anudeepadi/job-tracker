@@ -1,0 +1,67 @@
+# Simple Docker Compose - 3 Services with Health Checks
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jobtracker-db
+    environment:
+      POSTGRES_USER: jobtracker
+      POSTGRES_PASSWORD: jobtracker_password
+      POSTGRES_DB: jobtracker
+    ports:
+      - "5433:5432"  # Use 5433 externally to avoid conflicts with local postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - appnet
+
+  web:
+    build:
+      context: ./apps/web
+    container_name: jobtracker-web
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://jobtracker:jobtracker_password@postgres:5432/jobtracker
+      - JWT_SECRET=change-this-in-production
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - appnet
+
+  job-agent:
+    build:
+      context: ./services/job-agent
+    container_name: jobtracker-agent
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ADZUNA_APP_ID=${ADZUNA_APP_ID:-}
+      - ADZUNA_API_KEY=${ADZUNA_API_KEY:-}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - appnet
+
+volumes:
+  pgdata:
+
+networks:
+  appnet:

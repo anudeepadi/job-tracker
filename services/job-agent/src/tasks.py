@@ -43,7 +43,11 @@ def create_job_search_task(
 Search for {num_results} job listings for "{role}" positions in {location}.
 
 Your objective:
-1. Use the Job Search Tool to find relevant job listings
+1. Use ALL available job search tools to find relevant job listings:
+   - Job Search Tool (Adzuna - general job board)
+   - LinkedIn Job Search Tool (professional network)
+   - JSearch Tool (aggregates Indeed, Glassdoor, ZipRecruiter, etc.)
+   - RemoteOK Tool (remote-first positions)
 2. Review and filter the results for quality
 3. Present the job listings in a clear, structured format
 
@@ -53,8 +57,10 @@ Make sure to capture:
 - Salary range if available
 - Key requirements and qualifications
 - Application URL
+- Source (which platform the job is from)
 
 Format each job clearly so it can be analyzed by the Skills Advisor.
+Note: Some tools may not be available if API keys aren't configured - that's okay, use what's available.
 """,
 
         expected_output="""

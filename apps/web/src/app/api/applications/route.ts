@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   // Apply rate limiting
   const identifier = getClientIdentifier(request)
   const limitResult = await rateLimit(identifier, { windowMs: 60000, maxRequests: 100 })
-  
+
   if (!limitResult.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded' },
@@ -21,6 +21,15 @@ export async function GET(request: NextRequest) {
     )
   }
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -31,7 +40,9 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {}
+    const where: any = {
+      userId // Filter by user
+    }
 
     if (status) {
       where.status = status
@@ -95,10 +106,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     const application = await prisma.application.create({
       data: {
+        userId, // Associate with user
         company: body.company,
         jobTitle: body.jobTitle,
         jobUrl: body.jobUrl,

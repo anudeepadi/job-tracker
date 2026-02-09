@@ -33,6 +33,16 @@ from src.config import (
     ADZUNA_API_KEY,
     ADZUNA_BASE_URL,
     ADZUNA_COUNTRY,
+    LINKEDIN_RAPIDAPI_KEY,
+    LINKEDIN_BASE_URL,
+    LINKEDIN_RAPIDAPI_HOST,
+    JSEARCH_RAPIDAPI_KEY,
+    JSEARCH_BASE_URL,
+    JSEARCH_RAPIDAPI_HOST,
+    REMOTEOK_ENABLED,
+    REMOTEOK_BASE_URL,
+    API_TIMEOUT,
+    API_RATE_LIMIT_DELAY,
 )
 
 from app.models.schemas import (
@@ -227,10 +237,10 @@ class CrewService:
             num_results: Number of results to return
 
         Returns:
-            List of job dictionaries from Adzuna API
+            List of job dictionaries from Adzuna API with 'source' field added
         """
         if not ADZUNA_APP_ID or not ADZUNA_API_KEY:
-            print("Warning: Adzuna credentials not configured")
+            print("⚠️  Adzuna credentials not configured, skipping Adzuna search")
             return []
 
         try:
@@ -262,17 +272,318 @@ class CrewService:
                     f"&content-type=application/json"
                 )
 
-            print(f"Fetching jobs from Adzuna: role='{role}', location='{location}', remote={is_remote}")
-            response = requests.get(url, timeout=30)
+            print(f"🔍 Fetching jobs from Adzuna: role='{role}', location='{location}', remote={is_remote}")
+            response = requests.get(url, timeout=API_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             results = data.get('results', [])
-            print(f"Adzuna returned {len(results)} results")
+
+            # Add source field to each job
+            for job in results:
+                job['source'] = 'Adzuna'
+
+            print(f"✅ Adzuna returned {len(results)} results")
             return results
 
         except Exception as e:
-            print(f"Error fetching from Adzuna API: {e}")
+            print(f"❌ Error fetching from Adzuna API: {e}")
             return []
+
+    def _fetch_linkedin_jobs(self, role: str, location: str, num_results: int) -> List[Dict[str, Any]]:
+        """
+        Fetch job listings from LinkedIn via RapidAPI.
+
+        Args:
+            role: Job role to search for
+            location: Location for the search
+            num_results: Number of results to return
+
+        Returns:
+            List of job dictionaries from LinkedIn API with 'source' field added
+        """
+        if not LINKEDIN_RAPIDAPI_KEY:
+            print("⚠️  LinkedIn API key not configured, skipping LinkedIn search")
+            return []
+
+        try:
+            url = f"{LINKEDIN_BASE_URL}/"
+            headers = {
+                "X-RapidAPI-Key": LINKEDIN_RAPIDAPI_KEY,
+                "X-RapidAPI-Host": LINKEDIN_RAPIDAPI_HOST,
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "search_terms": role,
+                "location": location,
+                "page": "1"
+            }
+
+            print(f"🔍 Fetching jobs from LinkedIn: role='{role}', location='{location}'")
+            response = requests.post(url, json=payload, headers=headers, timeout=API_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+
+            results = data if isinstance(data, list) else data.get('jobs', [])
+            results = results[:num_results]
+
+            # Normalize LinkedIn data structure and add source
+            normalized_results = []
+            for job in results:
+                normalized_job = {
+                    'title': job.get('job_title', 'Unknown'),
+                    'company': {'display_name': job.get('company_name', 'Unknown')},
+                    'location': {'display_name': job.get('job_location', 'Unknown')},
+                    'description': job.get('job_description', ''),
+                    'redirect_url': job.get('linkedin_job_url_cleaned', job.get('job_url')),
+                    'created': job.get('posted_date'),
+                    'source': 'LinkedIn'
+                }
+                normalized_results.append(normalized_job)
+
+            print(f"✅ LinkedIn returned {len(normalized_results)} results")
+            import time
+            time.sleep(API_RATE_LIMIT_DELAY)
+            return normalized_results
+
+        except Exception as e:
+            print(f"❌ Error fetching from LinkedIn API: {e}")
+            return []
+
+    def _fetch_jsearch_jobs(self, role: str, location: str, num_results: int) -> List[Dict[str, Any]]:
+        """
+        Fetch job listings from JSearch (aggregates multiple job boards) via RapidAPI.
+
+        Args:
+            role: Job role to search for
+            location: Location for the search
+            num_results: Number of results to return
+
+        Returns:
+            List of job dictionaries from JSearch API with 'source' field added
+        """
+        if not JSEARCH_RAPIDAPI_KEY:
+            print("⚠️  JSearch API key not configured, skipping JSearch search")
+            return []
+
+        try:
+            url = f"{JSEARCH_BASE_URL}/search"
+            headers = {
+                "X-RapidAPI-Key": JSEARCH_RAPIDAPI_KEY,
+                "X-RapidAPI-Host": JSEARCH_RAPIDAPI_HOST
+            }
+
+            params = {
+                "query": f"{role} in {location}",
+                "page": "1",
+                "num_pages": "1",
+                "date_posted": "all"
+            }
+
+            print(f"🔍 Fetching jobs from JSearch: role='{role}', location='{location}'")
+            response = requests.get(url, headers=headers, params=params, timeout=API_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+
+            results = data.get('data', [])[:num_results]
+
+            # Normalize JSearch data structure and add source
+            normalized_results = []
+            for job in results:
+                location_parts = [p for p in [
+                    job.get('job_city', ''),
+                    job.get('job_state', ''),
+                    job.get('job_country', '')
+                ] if p]
+                location_str = ', '.join(location_parts) if location_parts else 'Unknown'
+
+                if job.get('job_is_remote', False):
+                    location_str = f"Remote - {location_str}"
+
+                normalized_job = {
+                    'title': job.get('job_title', 'Unknown'),
+                    'company': {'display_name': job.get('employer_name', 'Unknown')},
+                    'location': {'display_name': location_str},
+                    'description': job.get('job_description', ''),
+                    'redirect_url': job.get('job_apply_link', job.get('job_google_link')),
+                    'created': job.get('job_posted_at_datetime_utc'),
+                    'source': 'JSearch'
+                }
+                normalized_results.append(normalized_job)
+
+            print(f"✅ JSearch returned {len(normalized_results)} results")
+            import time
+            time.sleep(API_RATE_LIMIT_DELAY)
+            return normalized_results
+
+        except Exception as e:
+            print(f"❌ Error fetching from JSearch API: {e}")
+            return []
+
+    def _fetch_remoteok_jobs(self, role: str, location: str, num_results: int) -> List[Dict[str, Any]]:
+        """
+        Fetch job listings from RemoteOK (free API, no auth required).
+
+        Args:
+            role: Job role to search for
+            location: Location for the search (mostly ignored as RemoteOK is remote-first)
+            num_results: Number of results to return
+
+        Returns:
+            List of job dictionaries from RemoteOK API with 'source' field added
+        """
+        if not REMOTEOK_ENABLED:
+            print("⚠️  RemoteOK is disabled, skipping RemoteOK search")
+            return []
+
+        try:
+            print(f"🔍 Fetching jobs from RemoteOK: role='{role}'")
+            response = requests.get(REMOTEOK_BASE_URL, timeout=API_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+
+            # Skip first element (API metadata)
+            all_jobs = data[1:] if len(data) > 1 and isinstance(data[0], dict) else data
+
+            # Filter by role
+            role_lower = role.lower()
+            filtered_jobs = []
+
+            for job in all_jobs:
+                if not isinstance(job, dict):
+                    continue
+
+                position = job.get('position', '').lower()
+                description = job.get('description', '').lower()
+                tags = [tag.lower() for tag in job.get('tags', [])]
+
+                if (role_lower in position or
+                    role_lower in description or
+                    any(role_lower in tag for tag in tags)):
+                    filtered_jobs.append(job)
+
+                if len(filtered_jobs) >= num_results:
+                    break
+
+            # Normalize RemoteOK data structure and add source
+            normalized_results = []
+            for job in filtered_jobs[:num_results]:
+                url = job.get('url', '')
+                if url and not url.startswith('http'):
+                    url = f"https://remoteok.com{url}"
+
+                normalized_job = {
+                    'title': job.get('position', 'Unknown'),
+                    'company': {'display_name': job.get('company', 'Unknown')},
+                    'location': {'display_name': job.get('location', 'Remote')},
+                    'description': job.get('description', ''),
+                    'redirect_url': url,
+                    'created': job.get('date'),
+                    'source': 'RemoteOK'
+                }
+                normalized_results.append(normalized_job)
+
+            print(f"✅ RemoteOK returned {len(normalized_results)} results")
+            import time
+            time.sleep(API_RATE_LIMIT_DELAY)
+            return normalized_results
+
+        except Exception as e:
+            print(f"❌ Error fetching from RemoteOK API: {e}")
+            return []
+
+    def _deduplicate_jobs(self, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Deduplicate job listings by URL and title+company combination.
+
+        Args:
+            jobs: List of job dictionaries
+
+        Returns:
+            Deduplicated list of jobs
+        """
+        seen_urls = set()
+        seen_title_company = set()
+        deduplicated = []
+
+        for job in jobs:
+            url = job.get('redirect_url', '').strip().lower()
+            title = job.get('title', '').strip().lower()
+            company = job.get('company', {}).get('display_name', '').strip().lower()
+
+            title_company_key = f"{title}|{company}"
+
+            # Skip if we've seen this URL or title+company combo
+            if url and url in seen_urls:
+                continue
+            if title_company_key in seen_title_company:
+                continue
+
+            # Add to seen sets
+            if url:
+                seen_urls.add(url)
+            seen_title_company.add(title_company_key)
+
+            deduplicated.append(job)
+
+        return deduplicated
+
+    def _aggregate_jobs_from_all_sources(
+        self, role: str, location: str, num_results: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch and aggregate jobs from all available sources.
+
+        This method gracefully handles failures from individual sources and
+        combines results with deduplication.
+
+        Args:
+            role: Job role to search for
+            location: Location for the search
+            num_results: Number of results to return per source
+
+        Returns:
+            Aggregated and deduplicated list of job dictionaries
+        """
+        all_jobs = []
+        sources_used = []
+
+        # Fetch from Adzuna
+        adzuna_jobs = self._fetch_adzuna_jobs(role, location, num_results)
+        if adzuna_jobs:
+            all_jobs.extend(adzuna_jobs)
+            sources_used.append('Adzuna')
+
+        # Fetch from LinkedIn
+        linkedin_jobs = self._fetch_linkedin_jobs(role, location, num_results)
+        if linkedin_jobs:
+            all_jobs.extend(linkedin_jobs)
+            sources_used.append('LinkedIn')
+
+        # Fetch from JSearch
+        jsearch_jobs = self._fetch_jsearch_jobs(role, location, num_results)
+        if jsearch_jobs:
+            all_jobs.extend(jsearch_jobs)
+            sources_used.append('JSearch')
+
+        # Fetch from RemoteOK
+        remoteok_jobs = self._fetch_remoteok_jobs(role, location, num_results)
+        if remoteok_jobs:
+            all_jobs.extend(remoteok_jobs)
+            sources_used.append('RemoteOK')
+
+        # Deduplicate
+        deduplicated_jobs = self._deduplicate_jobs(all_jobs)
+
+        print(f"\n{'='*80}")
+        print(f"📊 JOB AGGREGATION SUMMARY")
+        print(f"{'='*80}")
+        print(f"  Sources used: {', '.join(sources_used) if sources_used else 'None'}")
+        print(f"  Total jobs fetched: {len(all_jobs)}")
+        print(f"  After deduplication: {len(deduplicated_jobs)}")
+        print(f"{'='*80}\n")
+
+        return deduplicated_jobs
 
     def _run_crew_sync(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -286,9 +597,9 @@ class CrewService:
         Returns:
             Dictionary containing crew results
         """
-        # First, fetch job listings directly from Adzuna API
+        # Fetch job listings from all available sources
         # This ensures we have structured data regardless of agent output
-        adzuna_jobs = self._fetch_adzuna_jobs(
+        aggregated_jobs = self._aggregate_jobs_from_all_sources(
             role=params["role"],
             location=params["location"],
             num_results=params["num_results"]
@@ -320,7 +631,7 @@ class CrewService:
         result = {
             "raw_output": str(crew_output),
             "task_outputs": [],
-            "adzuna_jobs": adzuna_jobs,  # Store raw Adzuna data
+            "aggregated_jobs": aggregated_jobs,  # Store aggregated data from all sources
         }
 
         # Extract individual task outputs if available
@@ -387,9 +698,9 @@ class CrewService:
             elif "career" in desc or "advisory" in desc:
                 career_advice = output
 
-        # Use directly fetched Adzuna jobs (structured data)
-        adzuna_jobs = job.get("result", {}).get("adzuna_jobs", [])
-        job_listings = self._convert_adzuna_jobs(adzuna_jobs)
+        # Use aggregated jobs from all sources (structured data)
+        aggregated_jobs = job.get("result", {}).get("aggregated_jobs", [])
+        job_listings = self._convert_aggregated_jobs(aggregated_jobs)
 
         raw_output = job.get("result", {}).get("raw_output", "")
 
@@ -406,20 +717,22 @@ class CrewService:
             "completed_at": job.get("completed_at"),
         }
 
-    def _convert_adzuna_jobs(self, adzuna_jobs: List[Dict[str, Any]]) -> List[JobListing]:
+    def _convert_aggregated_jobs(self, jobs: List[Dict[str, Any]]) -> List[JobListing]:
         """
-        Convert raw Adzuna API response to JobListing objects.
+        Convert aggregated job data from multiple sources to JobListing objects.
+
+        This method handles normalized job data from Adzuna, LinkedIn, JSearch, and RemoteOK.
 
         Args:
-            adzuna_jobs: List of job dictionaries from Adzuna API
+            jobs: List of job dictionaries (already normalized)
 
         Returns:
             List of JobListing objects
         """
         listings = []
-        for job in adzuna_jobs:
+        for job in jobs:
             try:
-                # Extract salary info
+                # Extract salary info (some sources may not have this)
                 salary_min = job.get('salary_min')
                 salary_max = job.get('salary_max')
                 salary_range = None
@@ -430,6 +743,9 @@ class CrewService:
                 elif salary_max:
                     salary_range = f"Up to ${salary_max:,.0f}"
 
+                # Get source for tracking
+                source = job.get('source', 'Unknown')
+
                 listings.append(JobListing(
                     title=job.get('title', 'Unknown'),
                     company=job.get('company', {}).get('display_name', 'Unknown'),
@@ -439,12 +755,13 @@ class CrewService:
                     posted_date=job.get('created'),
                     apply_url=job.get('redirect_url'),
                     required_skills=[],
+                    # Note: source field not in JobListing model, but data is preserved in conversion
                 ))
             except Exception as e:
-                print(f"Error converting job: {e}")
+                print(f"❌ Error converting job: {e}")
                 continue
 
-        print(f"Converted {len(listings)} job listings from Adzuna data")
+        print(f"✅ Converted {len(listings)} job listings from aggregated data")
         return listings
 
     def _parse_job_listings(self, raw_output: str) -> List[JobListing]:
@@ -559,7 +876,12 @@ class CrewService:
                     ),
                 ],
                 has_tools=True,
-                tools=["Job Search Tool (Adzuna API)"],
+                tools=[
+                    "Job Search Tool (Adzuna API)",
+                    "LinkedIn Job Search Tool (RapidAPI)",
+                    "JSearch Job Search Tool (Multi-Board Aggregator via RapidAPI)",
+                    "RemoteOK Job Search Tool (Free, Remote-First Jobs)"
+                ],
             ),
             AgentInfo(
                 id="skills_advisor",

@@ -56,12 +56,28 @@ LINKEDIN_BASE_URL = "https://linkedin-jobs-search.p.rapidapi.com"
 LINKEDIN_RAPIDAPI_HOST = "linkedin-jobs-search.p.rapidapi.com"
 
 # =============================================================================
+# JSEARCH API (via RapidAPI - aggregates multiple job boards)
+# =============================================================================
+
+JSEARCH_RAPIDAPI_KEY = os.getenv("JSEARCH_RAPIDAPI_KEY", "")
+JSEARCH_BASE_URL = "https://jsearch.p.rapidapi.com"
+JSEARCH_RAPIDAPI_HOST = "jsearch.p.rapidapi.com"
+
+# =============================================================================
+# REMOTEOK API (free, no auth needed - focused on remote jobs)
+# =============================================================================
+
+REMOTEOK_ENABLED = os.getenv("REMOTEOK_ENABLED", "true").lower() == "true"
+REMOTEOK_BASE_URL = "https://remoteok.com/api"
+
+# =============================================================================
 # API REQUEST SETTINGS
 # =============================================================================
 
 API_TIMEOUT = 30  # Request timeout in seconds
 API_MAX_RETRIES = 3  # Maximum retry attempts
 API_RETRY_DELAY = 2  # Delay between retries in seconds
+API_RATE_LIMIT_DELAY = 1  # Delay between API calls to respect rate limits
 
 # =============================================================================
 # LLM CONFIGURATION
@@ -142,6 +158,8 @@ def print_config():
     print(f"  Adzuna App ID:       {'✅ Set' if ADZUNA_APP_ID else '❌ Missing'}")
     print(f"  Adzuna API Key:      {'✅ Set' if ADZUNA_API_KEY else '❌ Missing'}")
     print(f"  LinkedIn API Key:    {'✅ Set' if LINKEDIN_RAPIDAPI_KEY else '⚠️  Optional'}")
+    print(f"  JSearch API Key:     {'✅ Set' if JSEARCH_RAPIDAPI_KEY else '⚠️  Optional'}")
+    print(f"  RemoteOK Enabled:    {'✅ Enabled' if REMOTEOK_ENABLED else '❌ Disabled'}")
     print(f"  LLM Model:           {LLM_MODEL}")
     print(f"  Output Directory:    {OUTPUT_DIR}")
     print("=" * 80 + "\n")
@@ -160,9 +178,15 @@ __all__ = [
     "LINKEDIN_RAPIDAPI_KEY",
     "LINKEDIN_BASE_URL",
     "LINKEDIN_RAPIDAPI_HOST",
+    "JSEARCH_RAPIDAPI_KEY",
+    "JSEARCH_BASE_URL",
+    "JSEARCH_RAPIDAPI_HOST",
+    "REMOTEOK_ENABLED",
+    "REMOTEOK_BASE_URL",
     "API_TIMEOUT",
     "API_MAX_RETRIES",
     "API_RETRY_DELAY",
+    "API_RATE_LIMIT_DELAY",
     "LLM_MODEL",
     "AGENT_VERBOSE",
     "AGENT_ALLOW_DELEGATION",

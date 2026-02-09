@@ -40,13 +40,44 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment
 
-Ensure the parent `job-search-agent/.env` file has the required API keys:
+Ensure the root `.env` file has the required API keys. The job agent supports multiple job search sources:
+
+#### Required API Keys
 
 ```env
-ANTHROPIC_API_KEY=your-anthropic-key
+# AI Model (required)
+OPENAI_API_KEY=your-openai-key
+
+# Adzuna Job Search (required - primary source)
 ADZUNA_APP_ID=your-adzuna-app-id
 ADZUNA_API_KEY=your-adzuna-api-key
 ```
+
+#### Optional API Keys (for enhanced job coverage)
+
+```env
+# LinkedIn Jobs (optional - requires RapidAPI subscription)
+LINKEDIN_RAPIDAPI_KEY=your-rapidapi-key
+
+# JSearch API (optional - aggregates Indeed, Glassdoor, ZipRecruiter, etc.)
+JSEARCH_RAPIDAPI_KEY=your-jsearch-rapidapi-key
+
+# RemoteOK (optional - FREE, no auth required)
+REMOTEOK_ENABLED=true
+```
+
+**Job Source Details:**
+
+- **Adzuna** (REQUIRED): General job board aggregator with free tier (1000 calls/month)
+- **LinkedIn** (OPTIONAL): Professional network jobs via RapidAPI (paid)
+- **JSearch** (OPTIONAL): Multi-board aggregator (Indeed, LinkedIn, Glassdoor, ZipRecruiter, BeBee) via RapidAPI (free tier: 100 requests/month)
+- **RemoteOK** (OPTIONAL): Remote-first tech positions, completely free, no authentication required
+
+The system automatically:
+- Tries all enabled sources in parallel
+- Combines and deduplicates results by URL and title+company
+- Continues if some sources fail (graceful degradation)
+- Logs which sources succeeded/failed
 
 ### 3. Run the Server
 

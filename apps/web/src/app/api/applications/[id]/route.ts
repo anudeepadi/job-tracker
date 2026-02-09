@@ -7,8 +7,20 @@ export async function GET(
 ) {
   const params = await props.params;
   try {
-    const application = await prisma.application.findUnique({
-      where: { id: params.id },
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      },
       include: {
         activities: {
           orderBy: { createdAt: 'desc' }
@@ -42,10 +54,23 @@ export async function PUT(
 ) {
   const params = await props.params;
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
-    const existingApplication = await prisma.application.findUnique({
-      where: { id: params.id }
+    // Verify ownership before fetching
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
     })
 
     if (!existingApplication) {
@@ -111,6 +136,30 @@ export async function DELETE(
 ) {
   const params = await props.params;
   try {
+    // Get userId from middleware-injected header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify ownership before deleting
+    const application = await prisma.application.findFirst({
+      where: {
+        id: params.id,
+        userId // Verify ownership
+      }
+    })
+
+    if (!application) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      )
+    }
+
     await prisma.application.delete({
       where: { id: params.id }
     })
