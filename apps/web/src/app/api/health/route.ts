@@ -5,12 +5,7 @@
 // Checks database connectivity and application availability
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-// Initialize Prisma Client (with connection pooling)
-const prisma = new PrismaClient({
-  errorFormat: "minimal",
-});
+import { prisma } from "@/lib/prisma";
 
 /**
  * Health check endpoint

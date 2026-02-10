@@ -74,16 +74,19 @@ export function ProfileClient() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">Profile</h1>
-      </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Profile</h1>
+          </div>
+        </div>
 
       <Card>
         <CardHeader>
@@ -123,6 +126,7 @@ export function ProfileClient() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

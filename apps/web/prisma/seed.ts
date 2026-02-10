@@ -1,8 +1,39 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  // Cleanup existing data
+  console.log('Cleaning up existing data...')
+  await prisma.reminder.deleteMany()
+  await prisma.activity.deleteMany()
+  await prisma.application.deleteMany()
+  await prisma.agentOutput.deleteMany()
+  await prisma.jobResult.deleteMany()
+  await prisma.jobSearch.deleteMany()
+  await prisma.searchPreset.deleteMany()
+  await prisma.applyTemplate.deleteMany()
+  await prisma.userPreference.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.user.deleteMany()
+  console.log('Cleanup complete!')
+
+  // Create demo user
+  console.log('Creating demo user...')
+  const passwordHash = await bcrypt.hash('demo123456', 10)
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@example.com' },
+    update: {},
+    create: {
+      email: 'demo@example.com',
+      passwordHash: passwordHash,
+      name: 'Demo User',
+      emailVerified: true
+    }
+  })
+  console.log(`Demo user created: ${demoUser.email}`)
+
   const applications = [
     {
       company: 'NVIDIA',
@@ -19,7 +50,8 @@ async function main() {
       contactPerson: 'Sarah Chen',
       contactEmail: 'sarah.chen@nvidia.com',
       appliedDate: new Date('2024-01-15'),
-      notes: 'Exciting opportunity to work on next-generation GPU architectures. Strong background in computer architecture required.'
+      notes: 'Exciting opportunity to work on next-generation GPU architectures. Strong background in computer architecture required.',
+      userId: demoUser.id
     },
     {
       company: 'PMG',
@@ -36,7 +68,8 @@ async function main() {
       contactPerson: 'Michael Rodriguez',
       contactEmail: 'michael.rodriguez@pmg.com',
       appliedDate: new Date('2024-01-18'),
-      notes: 'Leadership development program for new graduates. Great opportunity for career growth and mentorship.'
+      notes: 'Leadership development program for new graduates. Great opportunity for career growth and mentorship.',
+      userId: demoUser.id
     },
     {
       company: 'Handshake',
@@ -53,7 +86,8 @@ async function main() {
       contactPerson: 'Dr. Jennifer Liu',
       contactEmail: 'jennifer.liu@handshake.com',
       appliedDate: new Date('2024-01-20'),
-      notes: 'Research-focused role working on machine learning algorithms for career matching. Strong ML background preferred.'
+      notes: 'Research-focused role working on machine learning algorithms for career matching. Strong ML background preferred.',
+      userId: demoUser.id
     },
     {
       company: 'Cloudflare',
@@ -70,7 +104,8 @@ async function main() {
       contactPerson: 'Alex Thompson',
       contactEmail: 'alex.thompson@cloudflare.com',
       appliedDate: new Date('2024-01-22'),
-      notes: 'Building systems to detect and prevent fraudulent activities. Security and distributed systems experience valuable.'
+      notes: 'Building systems to detect and prevent fraudulent activities. Security and distributed systems experience valuable.',
+      userId: demoUser.id
     },
     {
       company: 'Optiver',
@@ -87,10 +122,12 @@ async function main() {
       contactPerson: 'Emma Williams',
       contactEmail: 'emma.williams@optiver.com',
       appliedDate: new Date('2024-01-10'),
-      notes: 'High-frequency trading firm looking for engineers with strong mathematical and programming skills. Very competitive compensation.'
+      notes: 'High-frequency trading firm looking for engineers with strong mathematical and programming skills. Very competitive compensation.',
+      userId: demoUser.id
     }
   ]
 
+  console.log('Creating applications...')
   for (const appData of applications) {
     const application = await prisma.application.create({
       data: appData
@@ -125,7 +162,7 @@ async function main() {
           date: new Date(application.appliedDate.getTime() + 7 * 24 * 60 * 60 * 1000)
         }
       })
-      
+
       await prisma.activity.create({
         data: {
           applicationId: application.id,
@@ -145,7 +182,7 @@ async function main() {
           date: new Date(application.appliedDate.getTime() + 5 * 24 * 60 * 60 * 1000)
         }
       })
-      
+
       await prisma.activity.create({
         data: {
           applicationId: application.id,
@@ -154,7 +191,7 @@ async function main() {
           date: new Date(application.appliedDate.getTime() + 12 * 24 * 60 * 60 * 1000)
         }
       })
-      
+
       await prisma.activity.create({
         data: {
           applicationId: application.id,
@@ -190,6 +227,9 @@ async function main() {
   }
 
   console.log('Seed data created successfully!')
+  console.log(`\nDemo User Credentials:`)
+  console.log(`  Email: demo@example.com`)
+  console.log(`  Password: demo123456`)
 }
 
 main()

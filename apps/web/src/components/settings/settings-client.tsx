@@ -48,7 +48,7 @@ export function SettingsClient() {
   })
 
   useEffect(() => {
-    // Best-effort load: preferences are auth-protected; if not logged in, we just keep defaults.
+    // Load all preferences from the API
     const loadPreferences = async () => {
       try {
         const res = await fetch('/api/user/preferences')
@@ -66,8 +66,20 @@ export function SettingsClient() {
             setResumeInventoryJson(prefs.resume_inventory_v1)
           }
         }
-      } catch {
-        // ignore
+
+        // Load general settings if they exist
+        if (prefs.settings) {
+          const loadedSettings = typeof prefs.settings === 'string'
+            ? JSON.parse(prefs.settings)
+            : prefs.settings
+
+          setSettings(prev => ({
+            ...prev,
+            ...loadedSettings
+          }))
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error)
       }
     }
 
@@ -77,11 +89,15 @@ export function SettingsClient() {
   const handleSave = async () => {
     setLoading(true)
     try {
-      // Save to user preferences
+      // Save settings to user preferences
       const response = await fetch('/api/user/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          preferences: {
+            settings: settings
+          }
+        })
       })
 
       if (!response.ok) throw new Error('Failed to save settings')

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkBackendHealth, fetchWithRetry, BACKEND_URL } from '@/lib/backend-client'
 
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'
+const PYTHON_BACKEND_URL = BACKEND_URL
 
 // Maximum time to wait for job search results (in ms)
 // CrewAI runs 4 sequential agents which can take 5-10 minutes
@@ -41,8 +42,11 @@ async function pollForResults(jobId: string): Promise<{ status: string; results?
   const startTime = Date.now()
 
   while (Date.now() - startTime < MAX_POLL_TIME) {
-    // Check status
-    const statusResponse = await fetch(`${PYTHON_BACKEND_URL}/api/search/${jobId}/status`)
+    // Check status with retry
+    const statusResponse = await fetchWithRetry(`/api/search/${jobId}/status`, {
+      method: 'GET',
+      retries: 2, // Fewer retries for polling
+    })
 
     if (!statusResponse.ok) {
       throw new Error('Failed to check job status')
@@ -51,8 +55,10 @@ async function pollForResults(jobId: string): Promise<{ status: string; results?
     const statusData = await statusResponse.json()
 
     if (statusData.status === 'completed') {
-      // Get results
-      const resultsResponse = await fetch(`${PYTHON_BACKEND_URL}/api/search/${jobId}/results`)
+      // Get results with retry
+      const resultsResponse = await fetchWithRetry(`/api/search/${jobId}/results`, {
+        method: 'GET',
+      })
 
       if (!resultsResponse.ok) {
         throw new Error('Failed to fetch job results')
@@ -108,6 +114,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check backend health before starting search
+    const isHealthy = await checkBackendHealth()
+    if (!isHealthy) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: 'Job search service is currently unavailable. Please ensure the Python backend is running on port 8000.',
+          results: [],
+          total_found: 0,
+        },
+        { status: 503 }
+      )
+    }
+
     // Step 0: Create a DB record so this search shows up in history (even if it fails)
     const dbSearch = await prisma.jobSearch.create({
       data: {
@@ -120,13 +140,10 @@ export async function POST(request: NextRequest) {
     })
     dbSearchId = dbSearch.id
 
-    // Step 1: Initiate the search with the Python backend
+    // Step 1: Initiate the search with the Python backend with retry
     // Python backend uses 'role' not 'job_role' and endpoint is /api/search
-    const searchResponse = await fetch(`${PYTHON_BACKEND_URL}/api/search`, {
+    const searchResponse = await fetchWithRetry('/api/search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         role: body.job_role,
         location: body.location,
@@ -297,16 +314,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Proxy the status check to the Python backend (correct endpoint)
-    const response = await fetch(
-      `${PYTHON_BACKEND_URL}/api/search/${searchId}/status`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    // Proxy the status check to the Python backend with retry
+    const response = await fetchWithRetry(`/api/search/${searchId}/status`, {
+      method: 'GET',
+    })
 
     if (!response.ok) {
       const errorText = await response.text()

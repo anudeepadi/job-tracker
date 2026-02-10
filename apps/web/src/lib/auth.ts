@@ -82,6 +82,17 @@ export async function getSession(): Promise<TokenPayload | null> {
   })
 
   if (!session) {
+    // Clean up expired sessions for this user while we're here
+    await prisma.session.deleteMany({
+      where: {
+        userId: payload.userId,
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    }).catch(() => {
+      // Ignore cleanup errors
+    })
     return null
   }
 

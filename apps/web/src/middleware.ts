@@ -16,7 +16,7 @@ const publicRoutes = [
 
 // Routes that require authentication (redirect to login if not authenticated)
 const protectedPageRoutes = [
-  '/',
+  '/dashboard',
   '/applications',
   '/ai-search',
   '/searches',

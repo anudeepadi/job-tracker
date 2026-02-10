@@ -66,10 +66,10 @@ trap cleanup SIGINT SIGTERM EXIT
 echo -e "${YELLOW}Starting development servers...${NC}"
 echo ""
 
-# Allow overriding ports via environment variables; default to uncommon ports.
-# (These can be set in .env or inline: WEB_PORT=3342 PYTHON_PORT=8342 npm run dev)
-PYTHON_PORT="${PYTHON_PORT:-8342}"
-WEB_PORT="${WEB_PORT:-3342}"
+# Allow overriding ports via environment variables; default to standard dev ports.
+# (These can be set in .env or inline: WEB_PORT=3000 PYTHON_PORT=8000 npm run dev)
+PYTHON_PORT="${PYTHON_PORT:-8000}"
+WEB_PORT="${WEB_PORT:-3000}"
 
 # Ensure Prisma client is generated for the web app (required for API routes using @prisma/client)
 echo -e "${BLUE}Generating Prisma client (apps/web)...${NC}"

@@ -13,6 +13,8 @@ import { RemindersPanel } from './reminders-panel'
 import { ActivityTimeline } from './activity-timeline'
 import { JobSearchPanel } from '@/components/job-search/job-search-panel'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { UserMenu } from '@/components/user-menu'
+import { EmailVerificationBanner } from '@/components/email-verification-banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -183,58 +185,32 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 space-y-6">
-      {/* Hero Header */}
-      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between mb-8 pt-4">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-mono text-xs tracking-widest uppercase">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            System Status: Online
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-foreground">
-            Job Tracker<span className="text-primary">.</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl font-light border-l-2 border-primary/20 pl-4">
-            Track and manage your job applications with agent-native precision.
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
+
+      {/* Page Header with Quick Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track and manage your job applications
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
-          <Button asChild variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
-            <Link href="/searches">
-              <Database className="h-4 w-4 mr-2" />
-              Searches
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
-            <Link href="/ai-search">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              AI Chat
-            </Link>
-          </Button>
-          <Button onClick={handleExport} variant="outline" size="lg" className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            Export
           </Button>
           <Button
             variant="outline"
-            size="lg"
+            size="sm"
             onClick={() => setShowShortcutsHelp(true)}
-            className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all"
           >
             <Keyboard className="h-4 w-4 mr-2" />
             Shortcuts
           </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setShowShortcutsHelp(true)}
-            className="font-mono text-xs uppercase tracking-wider h-12 border-primary/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all"
-          >
-            <Keyboard className="h-4 w-4 mr-2" />
-            Shortcuts
-          </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="lg" className="font-mono text-xs uppercase tracking-wider h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-[0_0_20px_-5px_hsl(var(--primary))]">
+          <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Application
           </Button>
@@ -337,31 +313,6 @@ export function Dashboard() {
                 <CardTitle>Activities</CardTitle>
                 <CardDescription>
                   Select an application to view its activity timeline
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="reminders" className="space-y-4">
-          <RemindersPanel />
-        </TabsContent>
-
-        <TabsContent value="activities" className="space-y-4">
-          {editingApplication ? (
-            <ActivityTimeline
-              applicationId={editingApplication.id}
-              application={{
-                company: editingApplication.company,
-                jobTitle: editingApplication.jobTitle
-              }}
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Activities</CardTitle>
-                <CardDescription>
-                  Select an application to view its activity timeline, or use the Activities tab when viewing an application
                 </CardDescription>
               </CardHeader>
             </Card>

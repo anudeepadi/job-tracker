@@ -221,10 +221,32 @@ implement appropriate authentication (JWT, API keys, etc.).
                 "openapi": "/openapi.json",
             },
             "endpoints": {
-                "health": "/api/health",
+                "health": "/health",
                 "agents": "/api/agents",
                 "search": "/api/search",
             },
+        }
+
+    # -------------------------------------------------------------------------
+    # Health Endpoint
+    # -------------------------------------------------------------------------
+
+    @app.get(
+        "/health",
+        summary="Health check",
+        description="Check if the API is running and healthy.",
+        tags=["health"],
+    )
+    async def health_check():
+        """
+        Health check endpoint.
+
+        Returns the health status of the API service.
+        """
+        return {
+            "status": "healthy",
+            "service": "job-agent-api",
+            "version": "1.0.0",
         }
 
     return app

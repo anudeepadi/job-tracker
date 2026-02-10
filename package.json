@@ -14,7 +14,7 @@
     "migrate-data": "bash scripts/migrate-data.sh",
     "dev:parallel": "pnpm run --parallel dev",
     "dev:web": "pnpm --filter web dev",
-    "dev:agent": "cd services/job-agent && python -m uvicorn app.main:app --reload --port ${PYTHON_PORT:-8342}",
+    "dev:agent": "cd services/job-agent && python -m uvicorn app.main:app --reload --port ${PYTHON_PORT:-8000}",
     "build": "pnpm run --parallel build",
     "build:web": "pnpm --filter web build",
     "lint": "pnpm run --parallel lint",

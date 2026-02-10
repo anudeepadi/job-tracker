@@ -62,10 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(data.user)
-      
+
       // Redirect to the original page or dashboard
       const searchParams = new URLSearchParams(window.location.search)
-      const redirect = searchParams.get('redirect') || '/'
+      const redirect = searchParams.get('redirect') || '/dashboard'
       router.push(redirect)
       router.refresh()
       
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(data.user)
-      router.push('/')
+      router.push('/dashboard')
       router.refresh()
       
       return { success: true }
