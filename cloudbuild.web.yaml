@@ -1,0 +1,16 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker/web:latest'
+      - '-f'
+      - 'Dockerfile.web.cloudrun'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker/web:latest'
+images:
+  - 'us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker/web:latest'
+timeout: 1800s

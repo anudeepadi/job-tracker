@@ -117,7 +117,8 @@ DEFAULT_NUM_RESULTS = 5
 # =============================================================================
 
 # Directory for saving output files
-OUTPUT_DIR = PROJECT_ROOT / "data" / "agent-outputs"
+# Use /tmp for Cloud Run compatibility (read-only filesystem)
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/tmp/agent-outputs"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # =============================================================================

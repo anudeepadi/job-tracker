@@ -1,7 +1,18 @@
 import { Resend } from 'resend'
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization of Resend client (only when actually used, not during build)
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendClient = new Resend(apiKey)
+  }
+  return resendClient
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -13,6 +24,7 @@ export async function sendVerificationEmail(to: string, token: string) {
   const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${token}`
 
   try {
+    const resend = getResendClient()
     const data = await resend.emails.send({
       from: FROM_EMAIL,
       to: [to],
@@ -77,6 +89,7 @@ export async function sendPasswordResetEmail(to: string, token: string) {
   const resetUrl = `${APP_URL}/reset-password?token=${token}`
 
   try {
+    const resend = getResendClient()
     const data = await resend.emails.send({
       from: FROM_EMAIL,
       to: [to],
