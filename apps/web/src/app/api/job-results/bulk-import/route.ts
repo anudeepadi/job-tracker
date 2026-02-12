@@ -4,6 +4,15 @@ import { prisma } from '@/lib/prisma'
 // POST /api/job-results/bulk-import - Import multiple job results
 export async function POST(request: NextRequest) {
   try {
+    // Auth: userId injected by middleware via x-user-id header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { jobResultIds, skipDuplicates = true } = body
 
@@ -14,7 +23,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch all job results
+    // Fetch all job results in one query
     const jobResults = await prisma.jobResult.findMany({
       where: {
         id: { in: jobResultIds }
@@ -29,89 +38,114 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const results = {
-      imported: [] as string[],
-      skipped: [] as string[],
-      errors: [] as Array<{ id: string; error: string }>
-    }
+    // Batch duplicate check: fetch all existing applications matching any
+    // (company, jobTitle) pair in a single query instead of N individual lookups
+    const existingApps = skipDuplicates
+      ? await prisma.application.findMany({
+          where: {
+            OR: jobResults.map((jr) => ({
+              company: jr.company,
+              jobTitle: jr.title,
+            })),
+          },
+          select: { company: true, jobTitle: true },
+        })
+      : []
+
+    const existingSet = new Set(
+      existingApps.map((a) => `${a.company}::${a.jobTitle}`)
+    )
+
+    // Separate into importable vs skipped before entering the transaction
+    const toImport: typeof jobResults = []
+    const skippedIds: string[] = []
 
     for (const jobResult of jobResults) {
+      if (skipDuplicates && jobResult.importedAsApplicationId) {
+        skippedIds.push(jobResult.id)
+        continue
+      }
+      if (skipDuplicates && existingSet.has(`${jobResult.company}::${jobResult.title}`)) {
+        skippedIds.push(jobResult.id)
+        continue
+      }
+      toImport.push(jobResult)
+    }
+
+    // Run all writes in a single transaction for atomicity
+    const importedJobResultIds: string[] = []
+    const createdApplicationIds: string[] = []
+    const errors: Array<{ id: string; error: string }> = []
+
+    if (toImport.length > 0) {
       try {
-        // Skip if already imported and skipDuplicates is true
-        if (skipDuplicates && jobResult.importedAsApplicationId) {
-          results.skipped.push(jobResult.id)
-          continue
-        }
+        await prisma.$transaction(async (tx) => {
+          for (const jobResult of toImport) {
+            const application = await tx.application.create({
+              data: {
+                userId,
+                company: jobResult.company,
+                jobTitle: jobResult.title,
+                jobUrl: jobResult.applyUrl || jobResult.sourceUrl || null,
+                location: jobResult.location || null,
+                locationType: jobResult.remote ? 'Remote' : null,
+                salaryMin: null,
+                salaryMax: null,
+                currency: 'USD',
+                status: 'Saved',
+                priority: 'Medium',
+                source: 'AI Search',
+                contactPerson: null,
+                contactEmail: null,
+                appliedDate: new Date(),
+                notes: [
+                  jobResult.postedDate ? `Posted: ${jobResult.postedDate}` : null,
+                  jobResult.jobType ? `Type: ${jobResult.jobType}` : null,
+                  jobResult.salary ? `Salary: ${jobResult.salary}` : null,
+                  jobResult.description ? `Description:\n${jobResult.description}` : null,
+                  jobResult.sourceUrl ? `Source URL: ${jobResult.sourceUrl}` : null,
+                ]
+                  .filter(Boolean)
+                  .join('\n\n'),
+                aiSearchId: jobResult.searchId,
+              },
+              select: { id: true },
+            })
 
-        // Check for duplicate by company and title
-        if (skipDuplicates) {
-          const existing = await prisma.application.findFirst({
-            where: {
-              company: jobResult.company,
-              jobTitle: jobResult.title
-            }
-          })
+            // Link job result back to the created application
+            await tx.jobResult.update({
+              where: { id: jobResult.id },
+              data: {
+                importedAsApplicationId: application.id,
+                importedAt: new Date(),
+              },
+            })
 
-          if (existing) {
-            results.skipped.push(jobResult.id)
-            continue
+            importedJobResultIds.push(jobResult.id)
+            createdApplicationIds.push(application.id)
           }
+
+          // Batch create all activity records at once using application IDs
+          await tx.activity.createMany({
+            data: createdApplicationIds.map((appId) => ({
+              applicationId: appId,
+              type: 'Status Change',
+              description: 'Application imported from job search',
+              date: new Date(),
+            })),
+          })
+        })
+      } catch (txError) {
+        // Transaction failed — all writes rolled back
+        console.error('Bulk import transaction failed:', txError)
+        for (const jr of toImport) {
+          errors.push({
+            id: jr.id,
+            error: txError instanceof Error ? txError.message : 'Transaction failed',
+          })
         }
-
-        const application = await prisma.application.create({
-          data: {
-            company: jobResult.company,
-            jobTitle: jobResult.title,
-            jobUrl: jobResult.applyUrl || jobResult.sourceUrl || null,
-            location: jobResult.location || null,
-            locationType: jobResult.remote ? 'Remote' : null,
-            salaryMin: null,
-            salaryMax: null,
-            currency: 'USD',
-            status: 'Saved',
-            priority: 'Medium',
-            source: 'AI Search',
-            contactPerson: null,
-            contactEmail: null,
-            appliedDate: new Date(),
-            notes: [
-              jobResult.postedDate ? `Posted: ${jobResult.postedDate}` : null,
-              jobResult.jobType ? `Type: ${jobResult.jobType}` : null,
-              jobResult.salary ? `Salary: ${jobResult.salary}` : null,
-              jobResult.description ? `Description:\n${jobResult.description}` : null,
-              jobResult.sourceUrl ? `Source URL: ${jobResult.sourceUrl}` : null,
-            ]
-              .filter(Boolean)
-              .join('\n\n'),
-            aiSearchId: jobResult.searchId,
-          },
-          select: { id: true, status: true },
-        })
-
-        await prisma.jobResult.update({
-          where: { id: jobResult.id },
-          data: {
-            importedAsApplicationId: application.id,
-            importedAt: new Date(),
-          },
-        })
-
-        await prisma.activity.create({
-          data: {
-            applicationId: application.id,
-            type: 'Status Change',
-            description: `Application imported from job search`,
-            date: new Date(),
-          },
-        })
-
-        results.imported.push(jobResult.id)
-      } catch (error) {
-        console.error(`Error importing job result ${jobResult.id}:`, error)
-        results.errors.push({
-          id: jobResult.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
+        importedJobResultIds.length = 0
+        createdApplicationIds.length = 0
       }
     }
 
@@ -119,11 +153,15 @@ export async function POST(request: NextRequest) {
       success: true,
       summary: {
         total: jobResultIds.length,
-        imported: results.imported.length,
-        skipped: results.skipped.length,
-        errors: results.errors.length
+        imported: importedJobResultIds.length,
+        skipped: skippedIds.length,
+        errors: errors.length,
       },
-      results
+      results: {
+        imported: importedJobResultIds,
+        skipped: skippedIds,
+        errors,
+      },
     })
   } catch (error) {
     console.error('Error in bulk import:', error)

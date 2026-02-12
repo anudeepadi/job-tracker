@@ -146,3 +146,114 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     return { success: false, error }
   }
 }
+
+/**
+ * Send job alert notification email
+ */
+export async function sendJobAlertEmail(params: {
+  to: string
+  userName: string
+  alertName: string
+  jobCount: number
+  jobs: Array<{
+    title: string
+    company: string
+    location?: string
+    salary?: string
+    url?: string
+  }>
+  searchCriteria: {
+    role: string
+    location?: string
+  }
+}) {
+  const { to, userName, alertName, jobCount, jobs, searchCriteria } = params
+
+  try {
+    const resend = getResendClient()
+
+    // Generate job listings HTML
+    const jobListingsHtml = jobs
+      .map(
+        (job) => `
+      <div style="background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #1f2937;">
+          ${job.title}
+        </h3>
+        <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
+          <strong>${job.company}</strong>${job.location ? ` • ${job.location}` : ''}
+        </p>
+        ${job.salary ? `<p style="margin: 0 0 12px 0; color: #059669; font-size: 14px; font-weight: 600;">${job.salary}</p>` : ''}
+        ${job.url ? `<a href="${job.url}" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 600;">View Job</a>` : ''}
+      </div>
+    `
+      )
+      .join('')
+
+    const data = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `${jobCount} New Jobs Found: ${alertName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Job Alert - ${alertName}</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #f3f4f6;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0 0 10px 0; font-size: 26px;">🎯 New Jobs Found!</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
+                ${jobCount} new ${jobCount === 1 ? 'position' : 'positions'} matching "${alertName}"
+              </p>
+            </div>
+
+            <div style="background: #f9fafb; padding: 30px 20px; border-radius: 0 0 10px 10px;">
+              <p style="font-size: 16px; margin-bottom: 10px;">
+                Hi ${userName},
+              </p>
+              <p style="font-size: 14px; color: #6b7280; margin-bottom: 25px;">
+                Your job alert <strong>"${alertName}"</strong> (${searchCriteria.role}${searchCriteria.location ? ` in ${searchCriteria.location}` : ''}) has found ${jobCount} new ${jobCount === 1 ? 'match' : 'matches'}:
+              </p>
+
+              ${jobListingsHtml}
+
+              ${jobs.length < jobCount ? `
+                <div style="text-align: center; margin-top: 20px;">
+                  <p style="font-size: 13px; color: #6b7280;">
+                    Plus ${jobCount - jobs.length} more ${jobCount - jobs.length === 1 ? 'job' : 'jobs'}...
+                  </p>
+                  <a href="${APP_URL}/dashboard" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 10px;">
+                    View All Jobs
+                  </a>
+                </div>
+              ` : ''}
+
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+              <div style="text-align: center;">
+                <p style="font-size: 13px; color: #6b7280; margin-bottom: 15px;">
+                  Manage your job alerts
+                </p>
+                <a href="${APP_URL}/settings" style="color: #667eea; text-decoration: none; font-size: 13px; font-weight: 600;">
+                  Alerts Settings →
+                </a>
+              </div>
+
+              <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 30px;">
+                You're receiving this email because you set up a job alert on JobTracker.
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending job alert email:', error)
+    return { success: false, error }
+  }
+}

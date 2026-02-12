@@ -31,6 +31,7 @@ model User {
   searchPresets      SearchPreset[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+  savedAlerts        SavedAlert[]
 
   @@index([email])
 }
@@ -257,4 +258,29 @@ model AgentOutput {
   @@index([searchId])
   @@index([agentType])
   @@index([createdAt])
+}
+
+// =============================================================================
+// Job Alerts & Saved Searches
+// =============================================================================
+
+// Saved job search alerts that run periodically and notify users of new matches
+model SavedAlert {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String // User-friendly name for the alert
+  searchCriteria String // JSON string containing job role, location, filters
+  frequency      String    @default("daily") // daily, weekly, realtime
+  isActive       Boolean   @default(true)
+  lastRunAt      DateTime? // When the alert was last executed
+  lastJobCount   Int       @default(0) // Number of jobs found in last run
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([frequency, isActive])
 }
