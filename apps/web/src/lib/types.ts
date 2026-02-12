@@ -30,12 +30,30 @@ export interface Application {
 }
 
 export interface ApplicationStats {
-  total: number
-  byStatus: Record<string, number>
-  byPriority: Record<string, number>
-  bySource: Record<string, number>
-  averageSalary?: number
-  recentCount: number
+  totalApplications: number
+  statusCounts: Record<string, number>
+  weeklyApplications: number
+  monthlyApplications: number
+  responseRate: number
+  sourceStats: Record<string, number>
+  timelineData: Array<{ date: string; count: number }>
+  weeklyTimelineData: Array<{ date: string; count: number }>
+  funnelData: {
+    applied: number
+    screen: number
+    interview: number
+    offer: number
+  }
+  sourceResponseRate: Record<string, { total: number; responded: number; rate: number }>
+  salaryAnalysis: {
+    count: number
+    avgMin: number
+    avgMax: number
+    avgMid: number
+    min: number
+    max: number
+    currency: string
+  } | null
 }
 
 // =============================================================================

@@ -9,8 +9,9 @@ import { ActivityTimeline } from './activity-timeline'
 import { EditApplicationDialog } from './edit-application-dialog'
 import { Application } from '@/lib/types'
 import { toast } from 'sonner'
-import { Edit, Trash2, ExternalLink, Calendar, MapPin, DollarSign, Mail, User } from 'lucide-react'
+import { Edit, Trash2, ExternalLink, Calendar, MapPin, DollarSign, Mail, User, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { TailoredResumeDialog } from '@/components/resume/tailored-resume-dialog'
 
 interface ApplicationDetailClientProps {
   application: Application & {
@@ -80,6 +81,18 @@ export function ApplicationDetailClient({ application: initialApplication }: App
               <CardDescription className="text-lg">{application.company}</CardDescription>
             </div>
             <div className="flex gap-2">
+              <TailoredResumeDialog
+                jobTitle={application.jobTitle}
+                jobDescription={application.notes || `${application.jobTitle} position at ${application.company}`}
+                company={application.company}
+                applicationId={application.id}
+                trigger={
+                  <Button variant="outline">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Tailor Resume
+                  </Button>
+                }
+              />
               <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit

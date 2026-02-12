@@ -3,8 +3,9 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ExternalLink, Plus, Loader2, Building2, MapPin, Clock, DollarSign } from 'lucide-react'
+import { ExternalLink, Plus, Loader2, Building2, MapPin, Clock, DollarSign, Sparkles } from 'lucide-react'
 import { JobResult } from '@/lib/types'
+import { TailoredResumeDialog } from '@/components/resume/tailored-resume-dialog'
 
 interface JobResultsCardProps {
   jobs: JobResult[]
@@ -98,6 +99,22 @@ export function JobResultsCard({ jobs, onImportJob, importingJobs = new Set() }:
                     Import
                   </Button>
                 )}
+
+                <TailoredResumeDialog
+                  jobTitle={job.title}
+                  jobDescription={job.description || `${job.title} position at ${job.company}`}
+                  company={job.company}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="font-mono text-[10px] h-7 px-2"
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Tailor
+                    </Button>
+                  }
+                />
               </div>
             </div>
           </CardContent>
