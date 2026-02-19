@@ -1,34 +1,34 @@
-import { Resend } from 'resend'
+import { Resend } from "resend";
 
 // Lazy initialization of Resend client (only when actually used, not during build)
-let resendClient: Resend | null = null
+let resendClient: Resend | null = null;
 
 function getResendClient(): Resend {
   if (!resendClient) {
-    const apiKey = process.env.RESEND_API_KEY
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      throw new Error('RESEND_API_KEY environment variable is not set')
+      throw new Error("RESEND_API_KEY environment variable is not set");
     }
-    resendClient = new Resend(apiKey)
+    resendClient = new Resend(apiKey);
   }
-  return resendClient
+  return resendClient;
 }
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /**
  * Send email verification email
  */
 export async function sendVerificationEmail(to: string, token: string) {
-  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${token}`
+  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
 
   try {
-    const resend = getResendClient()
+    const resend = getResendClient();
     const data = await resend.emails.send({
       from: FROM_EMAIL,
       to: [to],
-      subject: 'Verify your email - JobTracker',
+      subject: "Verify your email - HireAgent",
       html: `
         <!DOCTYPE html>
         <html>
@@ -44,7 +44,7 @@ export async function sendVerificationEmail(to: string, token: string) {
 
             <div style="background: #f9fafb; padding: 40px 30px; border-radius: 0 0 10px 10px;">
               <p style="font-size: 16px; margin-bottom: 20px;">
-                Thanks for signing up for JobTracker! To complete your registration, please verify your email address.
+                Thanks for signing up for HireAgent! To complete your registration, please verify your email address.
               </p>
 
               <div style="text-align: center; margin: 30px 0;">
@@ -67,18 +67,18 @@ export async function sendVerificationEmail(to: string, token: string) {
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
 
               <p style="font-size: 13px; color: #999; text-align: center;">
-                If you didn't create an account with JobTracker, you can safely ignore this email.
+                If you didn't create an account with HireAgent, you can safely ignore this email.
               </p>
             </div>
           </body>
         </html>
       `,
-    })
+    });
 
-    return { success: true, data }
+    return { success: true, data };
   } catch (error) {
-    console.error('Error sending verification email:', error)
-    return { success: false, error }
+    console.error("Error sending verification email:", error);
+    return { success: false, error };
   }
 }
 
@@ -86,14 +86,14 @@ export async function sendVerificationEmail(to: string, token: string) {
  * Send password reset email
  */
 export async function sendPasswordResetEmail(to: string, token: string) {
-  const resetUrl = `${APP_URL}/reset-password?token=${token}`
+  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
   try {
-    const resend = getResendClient()
+    const resend = getResendClient();
     const data = await resend.emails.send({
       from: FROM_EMAIL,
       to: [to],
-      subject: 'Reset your password - JobTracker',
+      subject: "Reset your password - HireAgent",
       html: `
         <!DOCTYPE html>
         <html>
@@ -109,7 +109,7 @@ export async function sendPasswordResetEmail(to: string, token: string) {
 
             <div style="background: #f9fafb; padding: 40px 30px; border-radius: 0 0 10px 10px;">
               <p style="font-size: 16px; margin-bottom: 20px;">
-                You requested to reset your password for your JobTracker account.
+                You requested to reset your password for your HireAgent account.
               </p>
 
               <div style="text-align: center; margin: 30px 0;">
@@ -138,12 +138,12 @@ export async function sendPasswordResetEmail(to: string, token: string) {
           </body>
         </html>
       `,
-    })
+    });
 
-    return { success: true, data }
+    return { success: true, data };
   } catch (error) {
-    console.error('Error sending password reset email:', error)
-    return { success: false, error }
+    console.error("Error sending password reset email:", error);
+    return { success: false, error };
   }
 }
 
@@ -151,26 +151,26 @@ export async function sendPasswordResetEmail(to: string, token: string) {
  * Send job alert notification email
  */
 export async function sendJobAlertEmail(params: {
-  to: string
-  userName: string
-  alertName: string
-  jobCount: number
+  to: string;
+  userName: string;
+  alertName: string;
+  jobCount: number;
   jobs: Array<{
-    title: string
-    company: string
-    location?: string
-    salary?: string
-    url?: string
-  }>
+    title: string;
+    company: string;
+    location?: string;
+    salary?: string;
+    url?: string;
+  }>;
   searchCriteria: {
-    role: string
-    location?: string
-  }
+    role: string;
+    location?: string;
+  };
 }) {
-  const { to, userName, alertName, jobCount, jobs, searchCriteria } = params
+  const { to, userName, alertName, jobCount, jobs, searchCriteria } = params;
 
   try {
-    const resend = getResendClient()
+    const resend = getResendClient();
 
     // Generate job listings HTML
     const jobListingsHtml = jobs
@@ -181,14 +181,14 @@ export async function sendJobAlertEmail(params: {
           ${job.title}
         </h3>
         <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
-          <strong>${job.company}</strong>${job.location ? ` • ${job.location}` : ''}
+          <strong>${job.company}</strong>${job.location ? ` • ${job.location}` : ""}
         </p>
-        ${job.salary ? `<p style="margin: 0 0 12px 0; color: #059669; font-size: 14px; font-weight: 600;">${job.salary}</p>` : ''}
-        ${job.url ? `<a href="${job.url}" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 600;">View Job</a>` : ''}
+        ${job.salary ? `<p style="margin: 0 0 12px 0; color: #059669; font-size: 14px; font-weight: 600;">${job.salary}</p>` : ""}
+        ${job.url ? `<a href="${job.url}" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 600;">View Job</a>` : ""}
       </div>
-    `
+    `,
       )
-      .join('')
+      .join("");
 
     const data = await resend.emails.send({
       from: FROM_EMAIL,
@@ -206,7 +206,7 @@ export async function sendJobAlertEmail(params: {
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
               <h1 style="color: white; margin: 0 0 10px 0; font-size: 26px;">🎯 New Jobs Found!</h1>
               <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
-                ${jobCount} new ${jobCount === 1 ? 'position' : 'positions'} matching "${alertName}"
+                ${jobCount} new ${jobCount === 1 ? "position" : "positions"} matching "${alertName}"
               </p>
             </div>
 
@@ -215,21 +215,25 @@ export async function sendJobAlertEmail(params: {
                 Hi ${userName},
               </p>
               <p style="font-size: 14px; color: #6b7280; margin-bottom: 25px;">
-                Your job alert <strong>"${alertName}"</strong> (${searchCriteria.role}${searchCriteria.location ? ` in ${searchCriteria.location}` : ''}) has found ${jobCount} new ${jobCount === 1 ? 'match' : 'matches'}:
+                Your job alert <strong>"${alertName}"</strong> (${searchCriteria.role}${searchCriteria.location ? ` in ${searchCriteria.location}` : ""}) has found ${jobCount} new ${jobCount === 1 ? "match" : "matches"}:
               </p>
 
               ${jobListingsHtml}
 
-              ${jobs.length < jobCount ? `
+              ${
+                jobs.length < jobCount
+                  ? `
                 <div style="text-align: center; margin-top: 20px;">
                   <p style="font-size: 13px; color: #6b7280;">
-                    Plus ${jobCount - jobs.length} more ${jobCount - jobs.length === 1 ? 'job' : 'jobs'}...
+                    Plus ${jobCount - jobs.length} more ${jobCount - jobs.length === 1 ? "job" : "jobs"}...
                   </p>
                   <a href="${APP_URL}/dashboard" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 10px;">
                     View All Jobs
                   </a>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
 
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
 
@@ -243,17 +247,17 @@ export async function sendJobAlertEmail(params: {
               </div>
 
               <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 30px;">
-                You're receiving this email because you set up a job alert on JobTracker.
+                You're receiving this email because you set up a job alert on HireAgent.
               </p>
             </div>
           </body>
         </html>
       `,
-    })
+    });
 
-    return { success: true, data }
+    return { success: true, data };
   } catch (error) {
-    console.error('Error sending job alert email:', error)
-    return { success: false, error }
+    console.error("Error sending job alert email:", error);
+    return { success: false, error };
   }
 }

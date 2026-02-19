@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Application Tracker",
-  description: "Track and manage your job applications in one place",
+  title: "HireAgent — Get Hired with AI Agents",
+  description:
+    "AI agents that search jobs, tailor your resume, and track applications across LinkedIn, Indeed, Glassdoor, and more.",
 };
 
 export default function RootLayout({

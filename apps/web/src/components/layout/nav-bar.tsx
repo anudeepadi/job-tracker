@@ -1,60 +1,67 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { UserMenu } from '@/components/user-menu'
-import { Sparkles, LayoutDashboard, Search, Database } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
+import { Bot, LayoutDashboard, Search, Database } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function NavBar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const navItems = [
     {
-      href: '/dashboard',
-      label: 'Dashboard',
+      href: "/dashboard",
+      label: "Dashboard",
       icon: LayoutDashboard,
     },
     {
-      href: '/ai-search',
-      label: 'AI Search',
+      href: "/ai-search",
+      label: "AI Search",
       icon: Search,
     },
     {
-      href: '/searches',
-      label: 'Searches',
+      href: "/searches",
+      label: "Searches",
       icon: Database,
     },
-  ]
+  ];
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="h-8 w-8 rounded-lg bg-foreground flex items-center justify-center">
+              <Bot className="h-5 w-5 text-background" />
             </div>
-            <span className="text-xl font-bold hidden sm:inline">JobTracker</span>
+            <span className="text-xl font-bold hidden sm:inline tracking-tight">
+              HireAgent
+            </span>
           </Link>
 
           {/* Nav Items - Desktop */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+              const Icon = item.icon;
+              const isActive =
+                pathname === item.href || pathname?.startsWith(item.href + "/");
 
               return (
                 <Button
                   key={item.href}
                   asChild
-                  variant={isActive ? 'secondary' : 'ghost'}
+                  variant={isActive ? "secondary" : "ghost"}
                   className={cn(
-                    'font-mono text-xs uppercase tracking-wider',
-                    isActive && 'bg-primary/10 text-primary hover:bg-primary/20'
+                    "font-mono text-xs uppercase tracking-wider",
+                    isActive &&
+                      "bg-primary/10 text-primary hover:bg-primary/20",
                   )}
                 >
                   <Link href={item.href}>
@@ -62,7 +69,7 @@ export function NavBar() {
                     {item.label}
                   </Link>
                 </Button>
-              )
+              );
             })}
           </div>
 
@@ -76,27 +83,28 @@ export function NavBar() {
         {/* Mobile Nav - Bottom */}
         <div className="md:hidden border-t border-border/40 py-2 flex items-center justify-around">
           {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+            const Icon = item.icon;
+            const isActive =
+              pathname === item.href || pathname?.startsWith(item.href + "/");
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex flex-col items-center gap-1 p-2 rounded-lg transition-colors',
+                  "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
                   isActive
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
                 )}
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-xs font-medium">{item.label}</span>
               </Link>
-            )
+            );
           })}
         </div>
       </div>
     </nav>
-  )
+  );
 }
