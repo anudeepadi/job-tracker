@@ -1,109 +1,142 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Briefcase,
   TrendingUp,
+  TrendingDown,
   Calendar,
   Target,
-  Users,
+  ArrowUpRight,
 } from 'lucide-react'
 import { ApplicationStats } from '@/lib/types'
 
 interface StatsCardsProps {
   stats: ApplicationStats
+  onViewDetails?: (tab: string) => void
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+const CARDS = [
+  {
+    key: 'total',
+    label: 'Total Applications',
+    icon: Briefcase,
+    color: '#3b82f6',
+    getValue: (s: ApplicationStats) => s.totalApplications,
+    getTrend: (s: ApplicationStats) => ({
+      value: s.monthlyApplications,
+      label: 'this month',
+      positive: s.monthlyApplications > 0,
+    }),
+  },
+  {
+    key: 'response',
+    label: 'Response Rate',
+    icon: TrendingUp,
+    color: '#8b5cf6',
+    getValue: (s: ApplicationStats) => `${s.responseRate}%`,
+    getTrend: (s: ApplicationStats) => ({
+      value: s.totalApplications > 0 ? s.responseRate : 0,
+      label: 'of applications',
+      positive: s.responseRate >= 20,
+    }),
+  },
+  {
+    key: 'interviews',
+    label: 'Active Interviews',
+    icon: Target,
+    color: '#ec4899',
+    getValue: (s: ApplicationStats) =>
+      (s.statusCounts['Phone Screen'] || 0) +
+      (s.statusCounts['Technical Interview'] || 0) +
+      (s.statusCounts['Final Interview'] || 0) +
+      (s.statusCounts['Interviewing'] || 0),
+    getTrend: (s: ApplicationStats) => {
+      const total =
+        (s.statusCounts['Phone Screen'] || 0) +
+        (s.statusCounts['Technical Interview'] || 0) +
+        (s.statusCounts['Final Interview'] || 0) +
+        (s.statusCounts['Interviewing'] || 0)
+      return {
+        value: total,
+        label: 'in pipeline',
+        positive: total > 0,
+      }
+    },
+  },
+  {
+    key: 'weekly',
+    label: 'This Week',
+    icon: Calendar,
+    color: '#10b981',
+    getValue: (s: ApplicationStats) => s.weeklyApplications,
+    getTrend: (s: ApplicationStats) => ({
+      value: s.weeklyApplications,
+      label: 'submitted',
+      positive: s.weeklyApplications > 0,
+    }),
+  },
+] as const
+
+export function StatsCards({ stats, onViewDetails }: StatsCardsProps) {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="border-primary/10 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 group">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-mono uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-            Total Applications
-          </CardTitle>
-          <Briefcase className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-4xl font-bold font-mono tracking-tighter">{stats.totalApplications}</div>
-          <p className="text-xs text-muted-foreground mt-2 font-mono">
-            <span className="text-primary">+</span> {stats.monthlyApplications} this month
-          </p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {CARDS.map((card) => {
+        const Icon = card.icon
+        const value = card.getValue(stats)
+        const trend = card.getTrend(stats)
 
-      <Card className="border-primary/10 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 group">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-mono uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-            Response Rate
-          </CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-4xl font-bold font-mono tracking-tighter">{stats.responseRate}%</div>
-          <p className="text-xs text-muted-foreground mt-2 font-mono">
-            Of total applications
-          </p>
-        </CardContent>
-      </Card>
+        return (
+          <Card
+            key={card.key}
+            className="border-border/50 bg-card hover:shadow-md transition-all duration-200 group"
+          >
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {card.label}
+                </span>
+                <div
+                  className="h-9 w-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: `${card.color}12` }}
+                >
+                  <Icon className="h-4 w-4" style={{ color: card.color }} />
+                </div>
+              </div>
 
-      <Card className="border-primary/10 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 group">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-mono uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-            This Week
-          </CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-4xl font-bold font-mono tracking-tighter">{stats.weeklyApplications}</div>
-          <p className="text-xs text-muted-foreground mt-2 font-mono">
-            Applications submitted
-          </p>
-        </CardContent>
-      </Card>
+              <div className="text-3xl font-bold tracking-tight mb-2">
+                {value}
+              </div>
 
-      <Card className="border-primary/10 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 group">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-mono uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-            Active Status
-          </CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-4xl font-bold font-mono tracking-tighter">
-            {(stats.statusCounts['Phone Screen'] || 0) +
-              (stats.statusCounts['Technical Interview'] || 0) +
-              (stats.statusCounts['Final Interview'] || 0)}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 font-mono">
-            In interview process
-          </p>
-        </CardContent>
-      </Card>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs">
+                  {trend.positive ? (
+                    <div className="flex items-center gap-1 bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full">
+                      <TrendingUp className="h-3 w-3" />
+                      <span className="font-medium">+{trend.value}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 bg-red-500/10 text-red-500 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+                      <TrendingDown className="h-3 w-3" />
+                      <span className="font-medium">{trend.value}</span>
+                    </div>
+                  )}
+                  <span className="text-muted-foreground">{trend.label}</span>
+                </div>
 
-      <Card className="md:col-span-2 lg:col-span-4 border-primary/10 bg-card/50 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-xs font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Applications by Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(stats.statusCounts).map(([status, count]) => (
-              <Badge
-                key={status}
-                variant="outline"
-                className="flex items-center gap-2 py-2 px-3 border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all"
-              >
-                <span className="text-xs font-mono uppercase text-muted-foreground">{status}</span>
-                <span className="font-bold font-mono text-primary">{count}</span>
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                {onViewDetails && (
+                  <button
+                    onClick={() => onViewDetails('analytics')}
+                    className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }
