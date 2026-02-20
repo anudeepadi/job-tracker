@@ -27,6 +27,7 @@ import { AddApplicationDialog } from "./add-application-dialog";
 import { EditApplicationDialog } from "./edit-application-dialog";
 import { RemindersPanel } from "./reminders-panel";
 import { JobSearchPanel } from "@/components/job-search/job-search-panel";
+import { ResumeOptimizerPanel } from "@/components/resume/resume-optimizer-panel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,6 +45,7 @@ import {
   MoreHorizontal,
   DollarSign,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 import { Application, ApplicationStats, JobResult } from "@/lib/types";
 import { toast } from "sonner";
@@ -278,6 +280,13 @@ export function Dashboard() {
             >
               <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5" />
               AI Search
+            </TabsTrigger>
+            <TabsTrigger
+              value="resume"
+              className="rounded-full px-3 md:px-4 py-1.5 text-xs md:text-sm data-[state=active]:bg-foreground data-[state=active]:text-background flex items-center gap-1 whitespace-nowrap"
+            >
+              <FileText className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              Resume
             </TabsTrigger>
           </TabsList>
         </div>
@@ -803,6 +812,13 @@ export function Dashboard() {
             ════════════════════════════════════════════════════════ */}
         <TabsContent value="ai-search" className="space-y-4 mt-0">
           <JobSearchPanel onImportJob={handleImportJob} />
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════
+            RESUME OPTIMIZER TAB
+            ════════════════════════════════════════════════════════ */}
+        <TabsContent value="resume" className="space-y-6 mt-0">
+          <ResumeOptimizerPanel />
         </TabsContent>
       </Tabs>
 

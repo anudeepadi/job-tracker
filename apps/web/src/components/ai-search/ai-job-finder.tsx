@@ -1,202 +1,212 @@
-'use client'
+"use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
-import { ArrowLeft, Trash2 } from 'lucide-react'
-import Link from 'next/link'
-import { ChatInput } from './chat-input'
-import { ChatMessage } from './chat-message'
-import { SuggestedPrompts } from './suggested-prompts'
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { ArrowLeft, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ChatInput } from "./chat-input";
+import { ChatMessage } from "./chat-message";
+import { SuggestedPrompts } from "./suggested-prompts";
 import {
   ChatMessage as ChatMessageType,
   JobResult,
   GeminiParseResponse,
-  JobSearchResponse
-} from '@/lib/types'
+  JobSearchResponse,
+} from "@/lib/types";
 
 export function AIJobFinder() {
-  const [messages, setMessages] = useState<ChatMessageType[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [importingJobs, setImportingJobs] = useState<Set<string>>(new Set())
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [importingJobs, setImportingJobs] = useState<Set<string>>(new Set());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const generateId = () => `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const generateId = () =>
+    `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const handleSendMessage = useCallback(async (content: string) => {
-    const userMessageId = generateId()
-    const assistantMessageId = generateId()
+    const userMessageId = generateId();
+    const assistantMessageId = generateId();
 
     // Add user message
     const userMessage: ChatMessageType = {
       id: userMessageId,
-      role: 'user',
+      role: "user",
       content,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    };
 
     // Add loading assistant message
     const loadingMessage: ChatMessageType = {
       id: assistantMessageId,
-      role: 'assistant',
-      content: 'Understanding your request...',
+      role: "assistant",
+      content: "Understanding your request...",
       timestamp: new Date(),
-      isLoading: true
-    }
+      isLoading: true,
+    };
 
-    setMessages(prev => [...prev, userMessage, loadingMessage])
-    setIsLoading(true)
+    setMessages((prev) => [...prev, userMessage, loadingMessage]);
+    setIsLoading(true);
 
     try {
       // Step 1: Parse the query with Gemini
-      const parseResponse = await fetch('/api/ai-search/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: content })
-      })
+      const parseResponse = await fetch("/api/ai-search/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: content }),
+      });
 
-      const parseData: GeminiParseResponse = await parseResponse.json()
+      const parseData: GeminiParseResponse = await parseResponse.json();
 
       if (!parseData.success || !parseData.parsedParams) {
         // Update with error
-        setMessages(prev =>
-          prev.map(msg =>
+        setMessages((prev) =>
+          prev.map((msg) =>
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  content: parseData.error || 'I couldn\'t understand your request. Please try being more specific about the job role and location.',
+                  content:
+                    parseData.error ||
+                    "I couldn't understand your request. Please try being more specific about the job role and location.",
                   isLoading: false,
-                  error: parseData.error
+                  error: parseData.error,
                 }
-              : msg
-          )
-        )
-        setIsLoading(false)
-        return
+              : msg,
+          ),
+        );
+        setIsLoading(false);
+        return;
       }
 
       // Update message with parsed params
-      setMessages(prev =>
-        prev.map(msg =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === assistantMessageId
             ? {
                 ...msg,
-                content: parseData.interpretation || `Searching for ${parseData.parsedParams!.numResults} "${parseData.parsedParams!.jobRole}" positions in ${parseData.parsedParams!.location}...`,
+                content:
+                  parseData.interpretation ||
+                  `Searching for ${parseData.parsedParams!.numResults} "${parseData.parsedParams!.jobRole}" positions in ${parseData.parsedParams!.location}...`,
                 parsedParams: parseData.parsedParams,
-                isLoading: true
+                isLoading: true,
               }
-            : msg
-        )
-      )
+            : msg,
+        ),
+      );
 
       // Step 2: Search for jobs
-      const searchResponse = await fetch('/api/job-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const searchResponse = await fetch("/api/job-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           job_role: parseData.parsedParams.jobRole,
           location: parseData.parsedParams.location,
-          num_results: parseData.parsedParams.numResults
-        })
-      })
+          num_results: parseData.parsedParams.numResults,
+        }),
+      });
 
-      const searchData: JobSearchResponse = await searchResponse.json()
+      const searchData: JobSearchResponse = await searchResponse.json();
 
-      if (searchData.status === 'error' || !searchResponse.ok) {
-        setMessages(prev =>
-          prev.map(msg =>
+      if (searchData.status === "error" || !searchResponse.ok) {
+        setMessages((prev) =>
+          prev.map((msg) =>
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  content: `I found your search parameters, but encountered an error while searching: ${searchData.error || 'Unable to connect to job search service'}`,
+                  content: `I found your search parameters, but encountered an error while searching: ${searchData.error || "Unable to connect to job search service"}`,
                   isLoading: false,
-                  error: searchData.error
+                  error: searchData.error,
                 }
-              : msg
-          )
-        )
-        setIsLoading(false)
-        return
+              : msg,
+          ),
+        );
+        setIsLoading(false);
+        return;
       }
 
       // Success - update with results
-      const resultsCount = searchData.results?.length || 0
-      const resultsMessage = resultsCount > 0
-        ? `Found ${resultsCount} job${resultsCount > 1 ? 's' : ''} matching your criteria! Here are the results:`
-        : 'I searched but couldn\'t find any jobs matching your criteria. Try broadening your search or using different keywords.'
+      const resultsCount = searchData.results?.length || 0;
+      const resultsMessage =
+        resultsCount > 0
+          ? `Found ${resultsCount} job${resultsCount > 1 ? "s" : ""} matching your criteria! Here are the results:`
+          : "I searched but couldn't find any jobs matching your criteria. Try broadening your search or using different keywords.";
 
-      setMessages(prev =>
-        prev.map(msg =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === assistantMessageId
             ? {
                 ...msg,
                 content: resultsMessage,
                 jobResults: searchData.results || [],
-                isLoading: false
+                isLoading: false,
               }
-            : msg
-        )
-      )
+            : msg,
+        ),
+      );
 
       if (resultsCount > 0) {
-        toast.success(`Found ${resultsCount} job listings!`)
+        toast.success(`Found ${resultsCount} job listings!`);
       } else {
-        toast.info('No jobs found matching your criteria')
+        toast.info("No jobs found matching your criteria");
       }
     } catch (error) {
-      console.error('Chat error:', error)
-      setMessages(prev =>
-        prev.map(msg =>
+      console.error("Chat error:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === assistantMessageId
             ? {
                 ...msg,
-                content: 'Sorry, something went wrong. Please try again.',
+                content: "Sorry, something went wrong. Please try again.",
                 isLoading: false,
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: error instanceof Error ? error.message : "Unknown error",
               }
-            : msg
-        )
-      )
-      toast.error('Failed to process your request')
+            : msg,
+        ),
+      );
+      toast.error("Failed to process your request");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   const handleImportJob = useCallback(async (job: JobResult) => {
-    const jobKey = `${job.company}-${job.title}-${job.url}`
-    setImportingJobs(prev => new Set(prev).add(jobKey))
+    const jobKey = `${job.company}-${job.title}-${job.url}`;
+    setImportingJobs((prev) => new Set(prev).add(jobKey));
 
     try {
       // Parse salary range
-      let salaryMin: number | null = null
-      let salaryMax: number | null = null
+      let salaryMin: number | null = null;
+      let salaryMax: number | null = null;
 
       if (job.salary_range) {
-        const salaryMatch = job.salary_range.match(/(\d+)k?\s*-\s*(\d+)k?/i)
+        const salaryMatch = job.salary_range.match(/(\d+)k?\s*-\s*(\d+)k?/i);
         if (salaryMatch) {
-          salaryMin = parseInt(salaryMatch[1]) * (job.salary_range.toLowerCase().includes('k') ? 1000 : 1)
-          salaryMax = parseInt(salaryMatch[2]) * (job.salary_range.toLowerCase().includes('k') ? 1000 : 1)
+          salaryMin =
+            parseInt(salaryMatch[1]) *
+            (job.salary_range.toLowerCase().includes("k") ? 1000 : 1);
+          salaryMax =
+            parseInt(salaryMatch[2]) *
+            (job.salary_range.toLowerCase().includes("k") ? 1000 : 1);
         }
       }
 
       // Determine location type
-      const locationLower = job.location?.toLowerCase() || ''
-      let locationType = 'Onsite'
-      if (locationLower.includes('remote')) {
-        locationType = 'Remote'
-      } else if (locationLower.includes('hybrid')) {
-        locationType = 'Hybrid'
+      const locationLower = job.location?.toLowerCase() || "";
+      let locationType = "Onsite";
+      if (locationLower.includes("remote")) {
+        locationType = "Remote";
+      } else if (locationLower.includes("hybrid")) {
+        locationType = "Hybrid";
       }
 
-      const response = await fetch('/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           company: job.company,
           jobTitle: job.title,
@@ -205,48 +215,53 @@ export function AIJobFinder() {
           locationType,
           salaryMin,
           salaryMax,
-          currency: 'USD',
-          status: 'Saved',
-          priority: 'Medium',
-          source: 'AI Search',
+          currency: "USD",
+          status: "Saved",
+          priority: "Medium",
+          source: "AI Search",
           appliedDate: new Date().toISOString(),
-          notes: job.description ? `${job.description}\n\nSource: ${job.source}` : `Source: ${job.source}`
-        })
-      })
+          notes: job.description
+            ? `${job.description}\n\nSource: ${job.source}`
+            : `Source: ${job.source}`,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to import job')
+        throw new Error("Failed to import job");
       }
 
-      toast.success(`Imported "${job.title}" at ${job.company}`)
+      toast.success(`Imported "${job.title}" at ${job.company}`);
     } catch (error) {
-      console.error('Failed to import job:', error)
-      toast.error('Failed to import job to tracker')
+      console.error("Failed to import job:", error);
+      toast.error("Failed to import job to tracker");
     } finally {
-      setImportingJobs(prev => {
-        const next = new Set(prev)
-        next.delete(jobKey)
-        return next
-      })
+      setImportingJobs((prev) => {
+        const next = new Set(prev);
+        next.delete(jobKey);
+        return next;
+      });
     }
-  }, [])
+  }, []);
 
   const handleClearChat = useCallback(() => {
-    setMessages([])
-    toast.info('Chat cleared')
-  }, [])
+    setMessages([]);
+    toast.info("Chat cleared");
+  }, []);
 
-  const handleSelectPrompt = useCallback((prompt: string) => {
-    handleSendMessage(prompt)
-  }, [handleSendMessage])
+  const handleSelectPrompt = useCallback(
+    (prompt: string) => {
+      handleSendMessage(prompt);
+    },
+    [handleSendMessage],
+  );
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+            <Link href="/dashboard">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -276,7 +291,7 @@ export function AIJobFinder() {
           <SuggestedPrompts onSelectPrompt={handleSelectPrompt} />
         ) : (
           <div className="pb-4">
-            {messages.map(message => (
+            {messages.map((message) => (
               <ChatMessage
                 key={message.id}
                 message={message}
@@ -296,5 +311,5 @@ export function AIJobFinder() {
         placeholder="e.g., Find me 10 remote React developer jobs..."
       />
     </div>
-  )
+  );
 }
