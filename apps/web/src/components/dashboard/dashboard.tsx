@@ -46,7 +46,10 @@ import {
   DollarSign,
   ArrowRight,
   FileText,
+  LayoutGrid,
+  List,
 } from "lucide-react";
+import { KanbanBoard } from "./kanban-board";
 import { Application, ApplicationStats, JobResult } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -71,6 +74,9 @@ export function Dashboard() {
     useState<Application | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [applicationsView, setApplicationsView] = useState<"table" | "board">(
+    "table",
+  );
 
   useKeyboardShortcuts([
     ...DEFAULT_SHORTCUTS.map((s) => ({
@@ -145,6 +151,35 @@ export function Dashboard() {
     setEditingApplication(application);
     setIsEditDialogOpen(true);
   };
+
+  const handleKanbanStatusChange = useCallback(
+    async (applicationId: string, newStatus: string) => {
+      // Optimistic update: create a new array with the updated status
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: newStatus } : app,
+        ),
+      );
+
+      try {
+        const response = await fetch(`/api/applications/${applicationId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+        toast.success(`Status updated to ${newStatus}`);
+        // Refresh stats to keep them in sync
+        fetchStats();
+      } catch (error) {
+        console.error("Error updating application status:", error);
+        toast.error("Failed to update status");
+        // Revert on failure by re-fetching
+        fetchApplications();
+      }
+    },
+    [],
+  );
 
   const handleExport = async () => {
     try {
@@ -766,26 +801,55 @@ export function Dashboard() {
             APPLICATIONS TAB
             ════════════════════════════════════════════════════════ */}
         <TabsContent value="applications" className="space-y-4 mt-0">
-          <Card className="border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">
-                All Applications
-              </CardTitle>
-              <CardDescription className="text-xs">
+          {/* View toggle + header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">All Applications</h2>
+              <p className="text-xs text-muted-foreground">
                 {applications.length} total applications tracked
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ApplicationTable
-                applications={applications}
-                onUpdate={handleApplicationUpdated}
-                onDelete={handleApplicationDeleted}
-                onEdit={handleEdit}
-                showPagination={true}
-                showFilters={true}
-              />
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5">
+              <Button
+                variant={applicationsView === "table" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setApplicationsView("table")}
+                title="Table view"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={applicationsView === "board" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setApplicationsView("board")}
+                title="Board view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {applicationsView === "table" ? (
+            <Card className="border-border/50">
+              <CardContent className="pt-4">
+                <ApplicationTable
+                  applications={applications}
+                  onUpdate={handleApplicationUpdated}
+                  onDelete={handleApplicationDeleted}
+                  onEdit={handleEdit}
+                  showPagination={true}
+                  showFilters={true}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <KanbanBoard
+              applications={applications}
+              onStatusChange={handleKanbanStatusChange}
+            />
+          )}
         </TabsContent>
 
         {/* ════════════════════════════════════════════════════════

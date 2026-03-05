@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateJSON } from "@/lib/gemini";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+
+const aiLimiter = rateLimit({ interval: 60_000, limit: 10 });
 
 interface TailorResumeRequest {
   jobTitle: string;
@@ -35,23 +38,26 @@ interface TailoredResumeResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = request.headers.get("x-user-id") || "anonymous";
+    const { success, retryAfter } = aiLimiter.check(userId);
+    if (!success) {
+      return rateLimitResponse(retryAfter);
+    }
+
     // Authenticate user
     const session = await getSession(request);
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
-    const body = await request.json() as TailorResumeRequest;
+    const body = (await request.json()) as TailorResumeRequest;
     const { jobTitle, jobDescription, company, applicationId } = body;
 
     if (!jobTitle || !jobDescription) {
       return NextResponse.json(
         { error: "jobTitle and jobDescription are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,10 +74,11 @@ export async function POST(request: NextRequest) {
     if (!resumeInventoryPref) {
       return NextResponse.json(
         {
-          error: "Resume inventory not found. Please add your resume details in Settings.",
-          code: "NO_RESUME_INVENTORY"
+          error:
+            "Resume inventory not found. Please add your resume details in Settings.",
+          code: "NO_RESUME_INVENTORY",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -128,7 +135,7 @@ Respond with a JSON object containing:
     const tailoredContent = await generateJSON<TailoredResumeResponse>(
       prompt,
       undefined,
-      "gemini-1.5-flash" // Fast model for cost-effectiveness
+      "gemini-1.5-flash", // Fast model for cost-effectiveness
     );
 
     // If applicationId provided, log this activity
@@ -166,9 +173,9 @@ Respond with a JSON object containing:
         return NextResponse.json(
           {
             error: "AI service not configured. Please contact support.",
-            code: "API_KEY_MISSING"
+            code: "API_KEY_MISSING",
           },
-          { status: 503 }
+          { status: 503 },
         );
       }
     }
@@ -178,7 +185,7 @@ Respond with a JSON object containing:
         error: "Failed to generate tailored resume",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -190,10 +197,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request);
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const resumeInventoryPref = await prisma.userPreference.findUnique({
@@ -213,7 +217,7 @@ export async function GET(request: NextRequest) {
     console.error("[AI-RESUME] Error checking inventory:", error);
     return NextResponse.json(
       { error: "Failed to check resume inventory" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

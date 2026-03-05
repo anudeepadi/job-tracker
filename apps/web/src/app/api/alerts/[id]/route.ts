@@ -5,24 +5,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-interface UpdateAlertRequest {
-  name?: string;
-  searchCriteria?: {
-    role: string;
-    location?: string;
-    filters?: Record<string, any>;
-  };
-  frequency?: "daily" | "weekly" | "realtime";
-  isActive?: boolean;
-}
+import { parseBody } from "@/lib/validations/common";
+import { updateAlertSchema } from "@/lib/validations/alerts";
 
 /**
  * PUT /api/alerts/[id] - Update an alert
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getSession(request);
@@ -31,7 +22,9 @@ export async function PUT(
     }
 
     const alertId = params.id;
-    const body = (await request.json()) as UpdateAlertRequest;
+    const parsed = await parseBody(request, updateAlertSchema);
+    if ("error" in parsed) return parsed.error;
+    const body = parsed.data;
 
     // Verify the alert belongs to the user
     const existingAlert = await prisma.savedAlert.findFirst({
@@ -71,7 +64,7 @@ export async function PUT(
     console.error("[ALERTS] Error updating alert:", error);
     return NextResponse.json(
       { error: "Failed to update alert" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -81,7 +74,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const session = await getSession(request);
@@ -113,7 +106,7 @@ export async function DELETE(
     console.error("[ALERTS] Error deleting alert:", error);
     return NextResponse.json(
       { error: "Failed to delete alert" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

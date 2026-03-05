@@ -5,16 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-interface CreateAlertRequest {
-  name: string;
-  searchCriteria: {
-    role: string;
-    location?: string;
-    filters?: Record<string, any>;
-  };
-  frequency: "daily" | "weekly" | "realtime";
-}
+import { parseBody } from "@/lib/validations/common";
+import { createAlertSchema } from "@/lib/validations/alerts";
 
 /**
  * GET /api/alerts - List all alerts for the authenticated user
@@ -42,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error("[ALERTS] Error fetching alerts:", error);
     return NextResponse.json(
       { error: "Failed to fetch alerts" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -57,24 +49,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await request.json()) as CreateAlertRequest;
-    const { name, searchCriteria, frequency } = body;
-
-    // Validate required fields
-    if (!name || !searchCriteria || !searchCriteria.role) {
-      return NextResponse.json(
-        { error: "name, searchCriteria.role are required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate frequency
-    if (!["daily", "weekly", "realtime"].includes(frequency)) {
-      return NextResponse.json(
-        { error: "frequency must be daily, weekly, or realtime" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseBody(request, createAlertSchema);
+    if ("error" in parsed) return parsed.error;
+    const { name, searchCriteria, frequency } = parsed.data;
 
     // Create the alert
     const alert = await prisma.savedAlert.create({
@@ -99,7 +76,7 @@ export async function POST(request: NextRequest) {
     console.error("[ALERTS] Error creating alert:", error);
     return NextResponse.json(
       { error: "Failed to create alert" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

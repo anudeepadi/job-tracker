@@ -1,55 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getClientIdentifier, rateLimit } from '@/lib/rate-limit'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getClientIdentifier, checkRateLimit } from "@/lib/rate-limit";
+import { createRequestLogger } from "@/lib/logger";
+import { parseBody } from "@/lib/validations/common";
+import { createApplicationSchema } from "@/lib/validations/applications";
+
+const ENDPOINT = "/api/applications";
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   // Apply rate limiting
-  const identifier = getClientIdentifier(request)
-  const limitResult = await rateLimit(identifier, { windowMs: 60000, maxRequests: 100 })
+  const identifier = getClientIdentifier(request);
+  const limitResult = await checkRateLimit(identifier, {
+    windowMs: 60000,
+    maxRequests: 100,
+  });
 
   if (!limitResult.allowed) {
     return NextResponse.json(
-      { error: 'Rate limit exceeded' },
+      { error: "Rate limit exceeded" },
       {
         status: 429,
         headers: {
-          'X-RateLimit-Limit': '100',
-          'X-RateLimit-Remaining': limitResult.remaining.toString(),
-          'X-RateLimit-Reset': limitResult.resetTime.toString()
-        }
-      }
-    )
+          "X-RateLimit-Limit": "100",
+          "X-RateLimit-Remaining": limitResult.remaining.toString(),
+          "X-RateLimit-Reset": limitResult.resetTime.toString(),
+        },
+      },
+    );
   }
   try {
     // Get userId from middleware-injected header
-    const userId = request.headers.get('x-user-id')
+    const userId = request.headers.get("x-user-id");
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const status = searchParams.get('status')
-    const priority = searchParams.get('priority')
-    const search = searchParams.get('search')
-    const sortBy = searchParams.get('sortBy') || 'appliedDate'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const log = createRequestLogger(ENDPOINT, userId);
+    log.info({ method: "GET" }, "Request received");
+
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const status = searchParams.get("status");
+    const priority = searchParams.get("priority");
+    const search = searchParams.get("search");
+    const sortBy = searchParams.get("sortBy") || "appliedDate";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
-      userId // Filter by user
-    }
+      userId, // Filter by user
+    };
 
     if (status) {
-      where.status = status
+      where.status = status;
     }
 
     if (priority) {
-      where.priority = priority
+      where.priority = priority;
     }
 
     if (search) {
@@ -58,11 +68,11 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { company: { contains: search } },
         { jobTitle: { contains: search } },
-        { location: { contains: search } }
-      ]
+        { location: { contains: search } },
+      ];
     }
 
-    const skip = (page - 1) * limit
+    const skip = (page - 1) * limit;
 
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
@@ -72,18 +82,24 @@ export async function GET(request: NextRequest) {
         orderBy: { [sortBy]: sortOrder },
         include: {
           activities: {
-            orderBy: { createdAt: 'desc' },
-            take: 3
+            orderBy: { createdAt: "desc" },
+            take: 3,
           },
           reminders: {
             where: { completed: false },
-            orderBy: { dueDate: 'asc' },
-            take: 3
-          }
-        }
+            orderBy: { dueDate: "asc" },
+            take: 3,
+          },
+        },
       }),
-      prisma.application.count({ where })
-    ])
+      prisma.application.count({ where }),
+    ]);
+
+    const durationMs = Date.now() - startTime;
+    log.info(
+      { method: "GET", statusCode: 200, durationMs, total },
+      "Response sent",
+    );
 
     return NextResponse.json({
       applications,
@@ -91,31 +107,42 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
-    })
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
-    console.error('Error fetching applications:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const durationMs = Date.now() - startTime;
+    const log = createRequestLogger(ENDPOINT);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    log.error(
+      { method: "GET", statusCode: 500, durationMs, error: errorMessage },
+      "Request failed",
+    );
+
     return NextResponse.json(
-      { error: 'Failed to fetch applications', details: errorMessage },
-      { status: 500 }
-    )
+      { error: "Failed to fetch applications", details: errorMessage },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
     // Get userId from middleware-injected header
-    const userId = request.headers.get('x-user-id')
+    const userId = request.headers.get("x-user-id");
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json()
+    const log = createRequestLogger(ENDPOINT, userId);
+    log.info({ method: "POST" }, "Request received");
+
+    const parsed = await parseBody(request, createApplicationSchema);
+    if ("error" in parsed) return parsed.error;
+    const body = parsed.data;
 
     const application = await prisma.application.create({
       data: {
@@ -127,36 +154,55 @@ export async function POST(request: NextRequest) {
         locationType: body.locationType,
         salaryMin: body.salaryMin,
         salaryMax: body.salaryMax,
-        currency: body.currency || 'USD',
-        status: body.status || 'Applied',
-        priority: body.priority || 'Medium',
+        currency: body.currency || "USD",
+        status: body.status || "Applied",
+        priority: body.priority || "Medium",
         source: body.source,
         contactPerson: body.contactPerson,
         contactEmail: body.contactEmail,
-        appliedDate: new Date(body.appliedDate),
-        notes: body.notes
+        appliedDate: body.appliedDate ? new Date(body.appliedDate) : new Date(),
+        notes: body.notes,
       },
       include: {
         activities: true,
-        reminders: true
-      }
-    })
+        reminders: true,
+      },
+    });
 
     await prisma.activity.create({
       data: {
         applicationId: application.id,
-        type: 'Status Change',
+        type: "Status Change",
         description: `Application created with status: ${application.status}`,
-        date: new Date()
-      }
-    })
+        date: new Date(),
+      },
+    });
 
-    return NextResponse.json(application, { status: 201 })
+    const durationMs = Date.now() - startTime;
+    log.info(
+      {
+        method: "POST",
+        statusCode: 201,
+        durationMs,
+        applicationId: application.id,
+      },
+      "Response sent",
+    );
+
+    return NextResponse.json(application, { status: 201 });
   } catch (error) {
-    console.error('Error creating application:', error)
+    const durationMs = Date.now() - startTime;
+    const log = createRequestLogger(ENDPOINT);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    log.error(
+      { method: "POST", statusCode: 500, durationMs, error: errorMessage },
+      "Request failed",
+    );
+
     return NextResponse.json(
-      { error: 'Failed to create application' },
-      { status: 500 }
-    )
+      { error: "Failed to create application" },
+      { status: 500 },
+    );
   }
 }

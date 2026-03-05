@@ -13,10 +13,20 @@ Or with the convenience script:
 Author: Backend API Designer
 """
 
+import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
+
+import sentry_sdk
+
+if dsn := os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=dsn,
+        traces_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "development"),
+    )
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware

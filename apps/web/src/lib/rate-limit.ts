@@ -1,92 +1,202 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // =============================================================================
-// In-Memory Rate Limiter
+// In-Memory Rate Limiter (Factory Pattern)
 // =============================================================================
 // Note: For production, consider using Redis or a database-backed solution
 // for distributed rate limiting across multiple server instances.
 
-interface RateLimitConfig {
-  windowMs: number // Time window in milliseconds
-  maxRequests: number // Maximum requests allowed in the window
+// -----------------------------------------------------------------------------
+// Types
+// -----------------------------------------------------------------------------
+
+interface RateLimitOptions {
+  readonly interval: number  // Time window in milliseconds
+  readonly limit: number     // Maximum requests allowed in the window
 }
 
-interface RateLimitResult {
-  allowed: boolean
-  remaining: number
-  resetTime: number // Timestamp when the limit resets
+interface RateLimitCheckResult {
+  readonly success: boolean
+  readonly remaining: number
+  readonly retryAfter: number  // Seconds until the limit resets (0 if not limited)
+}
+
+interface RateLimiter {
+  readonly check: (key: string) => RateLimitCheckResult
 }
 
 interface RateLimitEntry {
+  readonly count: number
+  readonly resetTime: number
+}
+
+// -----------------------------------------------------------------------------
+// Factory: rateLimit
+// -----------------------------------------------------------------------------
+
+/**
+ * Create a new rate limiter instance with the given options.
+ *
+ * Each limiter maintains its own Map of entries, keyed by an arbitrary string
+ * (e.g. IP address or user ID). Expired entries are cleaned up lazily on each
+ * `check()` call to prevent memory leaks.
+ *
+ * @example
+ * ```ts
+ * const authLimiter = rateLimit({ interval: 60_000, limit: 5 });
+ * const { success, retryAfter } = authLimiter.check(ip);
+ * if (!success) {
+ *   return rateLimitResponse(retryAfter);
+ * }
+ * ```
+ */
+export function rateLimit(options: RateLimitOptions): RateLimiter {
+  const { interval, limit } = options
+  const entries = new Map<string, RateLimitEntry>()
+
+  function cleanupExpired(now: number): void {
+    for (const [key, entry] of entries) {
+      if (entry.resetTime <= now) {
+        entries.delete(key)
+      }
+    }
+  }
+
+  function check(key: string): RateLimitCheckResult {
+    const now = Date.now()
+
+    // Clean up expired entries to prevent memory leaks
+    cleanupExpired(now)
+
+    const existing = entries.get(key)
+
+    // No entry or expired window — start fresh
+    if (!existing || existing.resetTime <= now) {
+      const newEntry: RateLimitEntry = {
+        count: 1,
+        resetTime: now + interval,
+      }
+      entries.set(key, newEntry)
+
+      return {
+        success: true,
+        remaining: limit - 1,
+        retryAfter: 0,
+      }
+    }
+
+    // Window still active — check if under the limit
+    if (existing.count < limit) {
+      const updatedEntry: RateLimitEntry = {
+        count: existing.count + 1,
+        resetTime: existing.resetTime,
+      }
+      entries.set(key, updatedEntry)
+
+      return {
+        success: true,
+        remaining: limit - updatedEntry.count,
+        retryAfter: 0,
+      }
+    }
+
+    // Rate limit exceeded
+    const retryAfterMs = existing.resetTime - now
+    const retryAfterSeconds = Math.ceil(retryAfterMs / 1000)
+
+    return {
+      success: false,
+      remaining: 0,
+      retryAfter: retryAfterSeconds,
+    }
+  }
+
+  return { check }
+}
+
+// -----------------------------------------------------------------------------
+// Helper: rateLimitResponse
+// -----------------------------------------------------------------------------
+
+/**
+ * Return a 429 Too Many Requests response with a Retry-After header.
+ */
+export function rateLimitResponse(retryAfter: number): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'Rate limit exceeded',
+      message: `Too many requests. Please try again in ${retryAfter} seconds.`,
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfter),
+      },
+    }
+  )
+}
+
+// =============================================================================
+// Legacy API (backward compatibility)
+// =============================================================================
+// The functions below preserve the original API used by middleware-rate-limit.ts
+// and applications/route.ts. New code should prefer the factory API above.
+
+interface LegacyRateLimitConfig {
+  windowMs: number
+  maxRequests: number
+}
+
+interface LegacyRateLimitResult {
+  allowed: boolean
+  remaining: number
+  resetTime: number
+}
+
+interface LegacyRateLimitEntry {
   count: number
   resetTime: number
 }
 
-// In-memory store: identifier -> rate limit entry
-const rateLimitStore = new Map<string, RateLimitEntry>()
+const legacyStore = new Map<string, LegacyRateLimitEntry>()
 
-// Lazy cleanup: clean up expired entries during rate limit checks
-// This avoids issues with setInterval in serverless environments
 let lastCleanup = Date.now()
-const CLEANUP_INTERVAL = 5 * 60 * 1000 // 5 minutes
+const CLEANUP_INTERVAL = 5 * 60 * 1000
 
-function cleanupIfNeeded() {
+function legacyCleanupIfNeeded(): void {
   const now = Date.now()
   if (now - lastCleanup < CLEANUP_INTERVAL) {
     return
   }
   lastCleanup = now
-  
-  for (const [key, entry] of rateLimitStore.entries()) {
+
+  for (const [key, entry] of legacyStore) {
     if (entry.resetTime < now) {
-      rateLimitStore.delete(key)
+      legacyStore.delete(key)
     }
   }
 }
 
 /**
- * Get a unique identifier for the client making the request
- * Uses IP address, or falls back to a user ID if available
+ * Legacy rate limit check — kept for backward compatibility.
+ * New code should use the `rateLimit()` factory function instead.
  */
-export function getClientIdentifier(request: NextRequest): string {
-  // Try to get IP address from headers (common in production with proxies)
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  const realIp = request.headers.get('x-real-ip')
-  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown'
-
-  // Optionally include user ID if authenticated
-  const userId = request.headers.get('x-user-id')
-  
-  // Combine IP and user ID for more accurate rate limiting
-  // If user is authenticated, use user ID; otherwise use IP
-  return userId ? `user:${userId}` : `ip:${ip}`
-}
-
-/**
- * Check if a request should be allowed based on rate limits
- * 
- * @param identifier - Unique identifier for the client (from getClientIdentifier)
- * @param config - Rate limit configuration
- * @returns Rate limit result with allowed status and remaining requests
- */
-export async function rateLimit(
+export async function checkRateLimit(
   identifier: string,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  // Perform lazy cleanup if needed
-  cleanupIfNeeded()
-  
-  const now = Date.now()
-  const entry = rateLimitStore.get(identifier)
+  config: LegacyRateLimitConfig
+): Promise<LegacyRateLimitResult> {
+  legacyCleanupIfNeeded()
 
-  // If no entry exists or the window has expired, create a new entry
+  const now = Date.now()
+  const entry = legacyStore.get(identifier)
+
   if (!entry || entry.resetTime < now) {
-    const newEntry: RateLimitEntry = {
+    const newEntry: LegacyRateLimitEntry = {
       count: 1,
       resetTime: now + config.windowMs,
     }
-    rateLimitStore.set(identifier, newEntry)
-    
+    legacyStore.set(identifier, newEntry)
+
     return {
       allowed: true,
       remaining: config.maxRequests - 1,
@@ -94,9 +204,7 @@ export async function rateLimit(
     }
   }
 
-  // Entry exists and window is still active
   if (entry.count >= config.maxRequests) {
-    // Rate limit exceeded
     return {
       allowed: false,
       remaining: 0,
@@ -104,55 +212,36 @@ export async function rateLimit(
     }
   }
 
-  // Increment count and allow request
-  entry.count++
-  rateLimitStore.set(identifier, entry)
+  const updatedEntry: LegacyRateLimitEntry = {
+    count: entry.count + 1,
+    resetTime: entry.resetTime,
+  }
+  legacyStore.set(identifier, updatedEntry)
 
   return {
     allowed: true,
-    remaining: config.maxRequests - entry.count,
+    remaining: config.maxRequests - updatedEntry.count,
     resetTime: entry.resetTime,
   }
 }
 
 /**
- * Reset rate limit for a specific identifier
- * Useful for testing or manual reset
+ * Get a unique identifier for the client making the request.
  */
+export function getClientIdentifier(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
+  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown'
+
+  const userId = request.headers.get('x-user-id')
+
+  return userId ? `user:${userId}` : `ip:${ip}`
+}
+
 export function resetRateLimit(identifier: string): void {
-  rateLimitStore.delete(identifier)
+  legacyStore.delete(identifier)
 }
 
-/**
- * Get current rate limit status for an identifier
- * Useful for debugging or status checks
- */
-export function getRateLimitStatus(
-  identifier: string,
-  config: RateLimitConfig
-): RateLimitResult {
-  const entry = rateLimitStore.get(identifier)
-  const now = Date.now()
-
-  if (!entry || entry.resetTime < now) {
-    return {
-      allowed: true,
-      remaining: config.maxRequests,
-      resetTime: now + config.windowMs,
-    }
-  }
-
-  return {
-    allowed: entry.count < config.maxRequests,
-    remaining: Math.max(0, config.maxRequests - entry.count),
-    resetTime: entry.resetTime,
-  }
-}
-
-/**
- * Clear all rate limit entries
- * Useful for testing or maintenance
- */
 export function clearAllRateLimits(): void {
-  rateLimitStore.clear()
+  legacyStore.clear()
 }
