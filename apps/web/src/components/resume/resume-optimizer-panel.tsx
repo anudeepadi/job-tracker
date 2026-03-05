@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -19,8 +19,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  BarChart3,
+  Eye,
 } from "lucide-react";
 import { TailoredResumeDialog } from "./tailored-resume-dialog";
+import { ResumeDiffView } from "./resume-diff-view";
+import { ATSScoreBadge } from "./ats-score-badge";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -34,10 +38,100 @@ interface Application {
   tailoredResumeContent?: string | null;
 }
 
+interface ATSScoreData {
+  readonly score: number;
+  readonly matchedKeywords: readonly string[];
+  readonly missingKeywords: readonly string[];
+  readonly suggestions: readonly string[];
+}
+
 export function ResumeOptimizerPanel() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [hasInventory, setHasInventory] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Diff + ATS state
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [atsData, setAtsData] = useState<ATSScoreData | null>(null);
+  const [atsLoading, setAtsLoading] = useState(false);
+  const [resumeInventoryText, setResumeInventoryText] = useState<string | null>(
+    null,
+  );
+
+  // Fetch resume inventory text for ATS scoring
+  const fetchResumeInventoryText = useCallback(async (): Promise<
+    string | null
+  > => {
+    if (resumeInventoryText !== null) return resumeInventoryText;
+    try {
+      const res = await fetch("/api/settings/resume-inventory");
+      if (!res.ok) return null;
+      const data = await res.json();
+      const text =
+        typeof data.value === "string"
+          ? data.value
+          : JSON.stringify(data.value, null, 2);
+      setResumeInventoryText(text);
+      return text;
+    } catch {
+      return null;
+    }
+  }, [resumeInventoryText]);
+
+  // Select an app and fetch its ATS score
+  const handleViewDiff = useCallback(
+    (app: Application) => {
+      // Toggle off if already selected
+      if (selectedApp?.id === app.id) {
+        setSelectedApp(null);
+        setAtsData(null);
+        return;
+      }
+      setSelectedApp(app);
+      setAtsData(null);
+    },
+    [selectedApp],
+  );
+
+  const handleCheckATS = useCallback(
+    async (app: Application) => {
+      if (!app.tailoredResumeContent || !app.notes) {
+        toast.error("Both a tailored resume and job description are required.");
+        return;
+      }
+
+      setSelectedApp(app);
+      setAtsLoading(true);
+      setAtsData(null);
+
+      try {
+        const inventoryText = await fetchResumeInventoryText();
+        const resumeText = app.tailoredResumeContent;
+        const jobDescription = app.notes;
+
+        const res = await fetch("/api/ai/ats-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeText, jobDescription }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(err.error || "Failed to check ATS score");
+          return;
+        }
+
+        const result = await res.json();
+        setAtsData(result.data);
+      } catch (error) {
+        console.error("Failed to check ATS score:", error);
+        toast.error("An unexpected error occurred while checking ATS score.");
+      } finally {
+        setAtsLoading(false);
+      }
+    },
+    [fetchResumeInventoryText],
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,9 +176,10 @@ export function ResumeOptimizerPanel() {
     (app) => app.tailoredResumeContent,
   ).length;
 
-  const optimizationScore = applications.length > 0
-    ? Math.round((tailoredCount / Math.max(activeApps.length, 1)) * 100)
-    : 0;
+  const optimizationScore =
+    applications.length > 0
+      ? Math.round((tailoredCount / Math.max(activeApps.length, 1)) * 100)
+      : 0;
 
   if (loading) {
     return (
@@ -179,12 +274,7 @@ export function ResumeOptimizerPanel() {
                   projects in Settings. This helps the AI generate personalized
                   resume content.
                 </p>
-                <Button
-                  asChild
-                  size="sm"
-                  variant="outline"
-                  className="mt-3"
-                >
+                <Button asChild size="sm" variant="outline" className="mt-3">
                   <Link href="/settings">
                     Go to Settings
                     <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -251,12 +341,33 @@ export function ResumeOptimizerPanel() {
                       {app.status}
                     </Badge>
                     {app.tailoredResumeContent ? (
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-600 border-0"
-                      >
-                        Tailored
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-600 border-0"
+                        >
+                          Tailored
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleViewDiff(app)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Diff
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleCheckATS(app)}
+                          disabled={atsLoading}
+                        >
+                          <BarChart3 className="h-3 w-3 mr-1" />
+                          ATS
+                        </Button>
+                      </div>
                     ) : (
                       <TailoredResumeDialog
                         jobTitle={app.jobTitle}
@@ -283,6 +394,71 @@ export function ResumeOptimizerPanel() {
           )}
         </CardContent>
       </Card>
+
+      {/* Resume Diff View */}
+      {selectedApp?.tailoredResumeContent && (
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-blue-500" />
+                  Resume Comparison — {selectedApp.jobTitle} at{" "}
+                  {selectedApp.company}
+                </CardTitle>
+                <CardDescription className="text-xs mt-1">
+                  Side-by-side diff of original job notes vs tailored resume
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedApp(null);
+                  setAtsData(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResumeDiffView
+              original={selectedApp.notes || "(No original job description)"}
+              tailored={selectedApp.tailoredResumeContent}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ATS Score */}
+      {selectedApp && (atsLoading || atsData) && (
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-purple-500" />
+              ATS Compatibility Score — {selectedApp.jobTitle} at{" "}
+              {selectedApp.company}
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              How well the tailored resume matches the job description for ATS
+              screening
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {atsLoading ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Analyzing ATS compatibility...
+                </p>
+              </div>
+            ) : atsData ? (
+              <ATSScoreBadge data={atsData} />
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tips */}
       <Card className="border-border/50">

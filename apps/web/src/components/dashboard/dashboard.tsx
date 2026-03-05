@@ -28,6 +28,8 @@ import { EditApplicationDialog } from "./edit-application-dialog";
 import { RemindersPanel } from "./reminders-panel";
 import { JobSearchPanel } from "@/components/job-search/job-search-panel";
 import { ResumeOptimizerPanel } from "@/components/resume/resume-optimizer-panel";
+import { AgentActivityPanel } from "./agent-activity-panel";
+import { ContactsPanel } from "@/components/contacts/contacts-panel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -48,6 +50,8 @@ import {
   FileText,
   LayoutGrid,
   List,
+  Bot,
+  Users,
 } from "lucide-react";
 import { KanbanBoard } from "./kanban-board";
 import { Application, ApplicationStats, JobResult } from "@/lib/types";
@@ -322,6 +326,20 @@ export function Dashboard() {
             >
               <FileText className="h-3 w-3 md:h-3.5 md:w-3.5" />
               Resume
+            </TabsTrigger>
+            <TabsTrigger
+              value="contacts"
+              className="rounded-full px-3 md:px-4 py-1.5 text-xs md:text-sm data-[state=active]:bg-foreground data-[state=active]:text-background flex items-center gap-1 whitespace-nowrap"
+            >
+              <Users className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              Contacts
+            </TabsTrigger>
+            <TabsTrigger
+              value="agents"
+              className="rounded-full px-3 md:px-4 py-1.5 text-xs md:text-sm data-[state=active]:bg-foreground data-[state=active]:text-background flex items-center gap-1 whitespace-nowrap"
+            >
+              <Bot className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              Agents
             </TabsTrigger>
           </TabsList>
         </div>
@@ -883,6 +901,20 @@ export function Dashboard() {
             ════════════════════════════════════════════════════════ */}
         <TabsContent value="resume" className="space-y-6 mt-0">
           <ResumeOptimizerPanel />
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════
+            CONTACTS TAB
+            ════════════════════════════════════════════════════════ */}
+        <TabsContent value="contacts" className="space-y-4 mt-0">
+          <ContactsPanel />
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════
+            AGENTS TAB
+            ════════════════════════════════════════════════════════ */}
+        <TabsContent value="agents" className="space-y-4 mt-0">
+          <AgentActivityPanel />
         </TabsContent>
       </Tabs>
 

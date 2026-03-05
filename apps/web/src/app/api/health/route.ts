@@ -45,9 +45,26 @@ export async function GET(request: NextRequest) {
       dbLatency = Date.now() - startTime;
     }
 
+    // Check agent service connectivity
+    let agentReachable = false;
+    let agentLatency = 0;
+    const agentUrl = process.env.AGENT_API_URL || "http://localhost:8000";
+    try {
+      const agentStart = Date.now();
+      const agentRes = await fetch(`${agentUrl}/health`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      agentReachable = agentRes.ok;
+      agentLatency = Date.now() - agentStart;
+    } catch {
+      agentLatency = Date.now() - startTime;
+    }
+
     // Determine overall health status
     const isHealthy = databaseHealthy;
     const statusCode = isHealthy ? 200 : 503;
+
+    const mem = process.memoryUsage();
 
     // Build response
     const response = {
@@ -60,9 +77,18 @@ export async function GET(request: NextRequest) {
           connected: databaseHealthy,
           latency_ms: dbLatency,
         },
+        agent: {
+          reachable: agentReachable,
+          latency_ms: agentLatency,
+          url: agentUrl,
+        },
+        memory: {
+          heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024),
+          heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
+          rss_mb: Math.round(mem.rss / 1024 / 1024),
+        },
         node: {
           version: process.version,
-          memory_usage_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
         },
       },
     };
@@ -93,7 +119,7 @@ export async function GET(request: NextRequest) {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           "X-Health-Check": "true",
         },
-      }
+      },
     );
   } finally {
     // Don't disconnect Prisma on every request in production
