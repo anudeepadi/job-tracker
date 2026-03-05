@@ -89,6 +89,99 @@ class SkillsAnalysisRequest(BaseModel):
     )
 
 
+class CoverLetterRequest(BaseModel):
+    """Request model for generating a cover letter."""
+    job_description: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Full job description text",
+    )
+    resume_text: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Candidate's resume content",
+    )
+    company: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Target company name",
+    )
+    role: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Target job title/role",
+    )
+
+
+class CoverLetterResponse(BaseModel):
+    """Response model for a generated cover letter."""
+    cover_letter: str = Field(..., description="Generated cover letter text")
+    generated_at: datetime = Field(..., description="Timestamp of generation")
+
+
+class FollowupEmailRequest(BaseModel):
+    """Request model for generating a follow-up email."""
+    company: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Company the candidate applied to",
+    )
+    role: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Job title the candidate applied for",
+    )
+    application_date: str = Field(
+        ...,
+        min_length=1,
+        description="Date the application was submitted (ISO string)",
+    )
+    previous_contact: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Notes about prior communication",
+    )
+
+
+class FollowupEmailResponse(BaseModel):
+    """Response model for a generated follow-up email."""
+    email: str = Field(..., description="Generated follow-up email text")
+    generated_at: datetime = Field(..., description="Timestamp of generation")
+
+
+class NetworkResearchRequest(BaseModel):
+    """Request model for networking research."""
+    company: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Target company to research",
+    )
+    role: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Target job title/role",
+    )
+    industry: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Industry context for research",
+    )
+
+
+class NetworkResearchResponse(BaseModel):
+    """Response model for networking research."""
+    research: str = Field(..., description="Structured networking strategy")
+    generated_at: datetime = Field(..., description="Timestamp of generation")
+
+
 # =============================================================================
 # RESPONSE MODELS - Job Listings
 # =============================================================================
@@ -261,6 +354,12 @@ __all__ = [
     # Request Models
     "JobSearchRequest",
     "SkillsAnalysisRequest",
+    "CoverLetterRequest",
+    "CoverLetterResponse",
+    "FollowupEmailRequest",
+    "FollowupEmailResponse",
+    "NetworkResearchRequest",
+    "NetworkResearchResponse",
     # Job Listing Models
     "JobListing",
     "MarketInsights",

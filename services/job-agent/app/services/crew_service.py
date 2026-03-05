@@ -953,6 +953,64 @@ class CrewService:
                 has_tools=False,
                 tools=[],
             ),
+            AgentInfo(
+                id="cover_letter_specialist",
+                name="Cover Letter Specialist",
+                role="Cover Letter Specialist",
+                goal="Generate compelling, tailored cover letters that match candidate experience to job requirements",
+                capabilities=[
+                    AgentCapability(
+                        name="Cover Letter Generation",
+                        description="Create personalized cover letters for specific job applications"
+                    ),
+                    AgentCapability(
+                        name="Experience Matching",
+                        description="Match resume experience to job requirements"
+                    ),
+                ],
+                has_tools=False,
+                tools=[],
+            ),
+            AgentInfo(
+                id="followup_specialist",
+                name="Follow-up Email Specialist",
+                role="Follow-up Email Specialist",
+                goal="Draft professional follow-up emails that maintain candidate visibility",
+                capabilities=[
+                    AgentCapability(
+                        name="Follow-up Email Drafting",
+                        description="Generate appropriately timed follow-up emails"
+                    ),
+                    AgentCapability(
+                        name="Tone Calibration",
+                        description="Adjust tone based on elapsed time and context"
+                    ),
+                ],
+                has_tools=False,
+                tools=[],
+            ),
+            AgentInfo(
+                id="networking_advisor",
+                name="Networking Strategy Advisor",
+                role="Networking Strategy Advisor",
+                goal="Provide actionable networking strategies for target companies",
+                capabilities=[
+                    AgentCapability(
+                        name="Company Research",
+                        description="Research companies and identify networking opportunities"
+                    ),
+                    AgentCapability(
+                        name="Contact Strategy",
+                        description="Identify key roles and craft conversation starters"
+                    ),
+                    AgentCapability(
+                        name="Event Discovery",
+                        description="Find relevant events and communities"
+                    ),
+                ],
+                has_tools=False,
+                tools=[],
+            ),
         ]
 
         self._agents_cache = agents

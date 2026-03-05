@@ -1,70 +1,103 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { RemindersPanel } from './reminders-panel'
-import { ActivityTimeline } from './activity-timeline'
-import { EditApplicationDialog } from './edit-application-dialog'
-import { Application } from '@/lib/types'
-import { toast } from 'sonner'
-import { Edit, Trash2, ExternalLink, Calendar, MapPin, DollarSign, Mail, User, Sparkles } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { TailoredResumeDialog } from '@/components/resume/tailored-resume-dialog'
+import { useState } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { RemindersPanel } from "./reminders-panel";
+import { ActivityTimeline } from "./activity-timeline";
+import { EditApplicationDialog } from "./edit-application-dialog";
+import { Application } from "@/lib/types";
+import { toast } from "sonner";
+import {
+  Edit,
+  Trash2,
+  ExternalLink,
+  Calendar,
+  MapPin,
+  DollarSign,
+  Mail,
+  User,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { TailoredResumeDialog } from "@/components/resume/tailored-resume-dialog";
+import { FollowupEmailDialog } from "@/components/ai/followup-email-dialog";
+import { NetworkResearchDialog } from "@/components/ai/network-research-dialog";
 
 interface ApplicationDetailClientProps {
   application: Application & {
-    activities?: any[]
-    reminders?: any[]
-  }
+    activities?: any[];
+    reminders?: any[];
+  };
 }
 
-export function ApplicationDetailClient({ application: initialApplication }: ApplicationDetailClientProps) {
-  const [application, setApplication] = useState(initialApplication)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const router = useRouter()
+export function ApplicationDetailClient({
+  application: initialApplication,
+}: ApplicationDetailClientProps) {
+  const [application, setApplication] = useState(initialApplication);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const router = useRouter();
 
   const handleApplicationUpdated = async () => {
     try {
-      const response = await fetch(`/api/applications/${application.id}`)
-      if (!response.ok) throw new Error('Failed to fetch application')
-      const updated = await response.json()
-      setApplication(updated)
-      toast.success('Application updated successfully')
+      const response = await fetch(`/api/applications/${application.id}`);
+      if (!response.ok) throw new Error("Failed to fetch application");
+      const updated = await response.json();
+      setApplication(updated);
+      toast.success("Application updated successfully");
     } catch (error) {
-      console.error('Error fetching updated application:', error)
-      toast.error('Failed to refresh application')
+      console.error("Error fetching updated application:", error);
+      toast.error("Failed to refresh application");
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
-      return
+    if (
+      !confirm(
+        "Are you sure you want to delete this application? This action cannot be undone.",
+      )
+    ) {
+      return;
     }
 
     try {
       const response = await fetch(`/api/applications/${application.id}`, {
-        method: 'DELETE'
-      })
+        method: "DELETE",
+      });
 
-      if (!response.ok) throw new Error('Failed to delete application')
+      if (!response.ok) throw new Error("Failed to delete application");
 
-      toast.success('Application deleted successfully')
-      router.push('/')
+      toast.success("Application deleted successfully");
+      router.push("/");
     } catch (error) {
-      console.error('Error deleting application:', error)
-      toast.error('Failed to delete application')
+      console.error("Error deleting application:", error);
+      toast.error("Failed to delete application");
     }
-  }
+  };
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const daysSinceApplied = Math.floor(
+    (Date.now() - new Date(application.appliedDate).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  const showFollowup =
+    application.status === "Applied" && daysSinceApplied >= 7;
 
   return (
     <div className="space-y-6">
@@ -74,16 +107,23 @@ export function ApplicationDetailClient({ application: initialApplication }: App
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <CardTitle className="text-2xl">{application.jobTitle}</CardTitle>
+                <CardTitle className="text-2xl">
+                  {application.jobTitle}
+                </CardTitle>
                 <Badge variant="outline">{application.status}</Badge>
                 <Badge variant="secondary">{application.priority}</Badge>
               </div>
-              <CardDescription className="text-lg">{application.company}</CardDescription>
+              <CardDescription className="text-lg">
+                {application.company}
+              </CardDescription>
             </div>
             <div className="flex gap-2">
               <TailoredResumeDialog
                 jobTitle={application.jobTitle}
-                jobDescription={application.notes || `${application.jobTitle} position at ${application.company}`}
+                jobDescription={
+                  application.notes ||
+                  `${application.jobTitle} position at ${application.company}`
+                }
                 company={application.company}
                 applicationId={application.id}
                 trigger={
@@ -93,7 +133,33 @@ export function ApplicationDetailClient({ application: initialApplication }: App
                   </Button>
                 }
               />
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+              {showFollowup && (
+                <FollowupEmailDialog
+                  company={application.company}
+                  role={application.jobTitle}
+                  applicationDate={application.appliedDate}
+                  trigger={
+                    <Button variant="outline">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Draft Follow-up
+                    </Button>
+                  }
+                />
+              )}
+              <NetworkResearchDialog
+                company={application.company}
+                role={application.jobTitle}
+                trigger={
+                  <Button variant="outline">
+                    <Users className="h-4 w-4 mr-2" />
+                    Research Company
+                  </Button>
+                }
+              />
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
@@ -111,7 +177,9 @@ export function ApplicationDetailClient({ application: initialApplication }: App
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span>{application.location}</span>
                 {application.locationType && (
-                  <Badge variant="outline" className="ml-2">{application.locationType}</Badge>
+                  <Badge variant="outline" className="ml-2">
+                    {application.locationType}
+                  </Badge>
                 )}
               </div>
             )}
@@ -120,10 +188,10 @@ export function ApplicationDetailClient({ application: initialApplication }: App
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span>
                   {application.salaryMin && application.salaryMax
-                    ? `${application.salaryMin.toLocaleString()} - ${application.salaryMax.toLocaleString()} ${application.currency || 'USD'}`
+                    ? `${application.salaryMin.toLocaleString()} - ${application.salaryMax.toLocaleString()} ${application.currency || "USD"}`
                     : application.salaryMin
-                    ? `${application.salaryMin.toLocaleString()}+ ${application.currency || 'USD'}`
-                    : `Up to ${application.salaryMax?.toLocaleString()} ${application.currency || 'USD'}`}
+                      ? `${application.salaryMin.toLocaleString()}+ ${application.currency || "USD"}`
+                      : `Up to ${application.salaryMax?.toLocaleString()} ${application.currency || "USD"}`}
                 </span>
               </div>
             )}
@@ -146,7 +214,10 @@ export function ApplicationDetailClient({ application: initialApplication }: App
             {application.contactEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${application.contactEmail}`} className="text-primary hover:underline">
+                <a
+                  href={`mailto:${application.contactEmail}`}
+                  className="text-primary hover:underline"
+                >
                   {application.contactEmail}
                 </a>
               </div>
@@ -154,7 +225,11 @@ export function ApplicationDetailClient({ application: initialApplication }: App
             {application.jobUrl && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <a href={application.jobUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={application.jobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     View Job Posting
                   </a>
@@ -177,7 +252,7 @@ export function ApplicationDetailClient({ application: initialApplication }: App
           applicationId={application.id}
           application={{
             company: application.company,
-            jobTitle: application.jobTitle
+            jobTitle: application.jobTitle,
           }}
         />
         <RemindersPanel
@@ -194,5 +269,5 @@ export function ApplicationDetailClient({ application: initialApplication }: App
         onApplicationUpdated={handleApplicationUpdated}
       />
     </div>
-  )
+  );
 }
