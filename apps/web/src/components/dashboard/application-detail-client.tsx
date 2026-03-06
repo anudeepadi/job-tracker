@@ -26,11 +26,13 @@ import {
   User,
   Sparkles,
   Users,
+  FileText,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { TailoredResumeDialog } from "@/components/resume/tailored-resume-dialog";
 import { FollowupEmailDialog } from "@/components/ai/followup-email-dialog";
 import { NetworkResearchDialog } from "@/components/ai/network-research-dialog";
+import { CoverLetterDialog } from "@/components/ai/cover-letter-dialog";
 
 interface ApplicationDetailClientProps {
   application: Application & {
@@ -130,6 +132,17 @@ export function ApplicationDetailClient({
                   <Button variant="outline">
                     <Sparkles className="h-4 w-4 mr-2" />
                     Tailor Resume
+                  </Button>
+                }
+              />
+              <CoverLetterDialog
+                company={application.company}
+                role={application.jobTitle}
+                jobDescription={application.notes || undefined}
+                trigger={
+                  <Button variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Cover Letter
                   </Button>
                 }
               />
