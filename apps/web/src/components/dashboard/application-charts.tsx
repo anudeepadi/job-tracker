@@ -1,6 +1,12 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -16,34 +22,40 @@ import {
   ResponsiveContainer,
   FunnelChart,
   Funnel,
-  LabelList
-} from 'recharts'
-import { ApplicationStats, STATUS_COLORS } from '@/lib/types'
-import { TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react'
+  LabelList,
+} from "recharts";
+import { ApplicationStats, STATUS_COLORS } from "@/lib/types";
+import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
 
 interface ApplicationChartsProps {
-  stats: ApplicationStats
+  stats: ApplicationStats;
 }
 
 export function ApplicationCharts({ stats }: ApplicationChartsProps) {
-  const statusData = Object.entries(stats.statusCounts).map(([status, count]) => ({
-    name: status,
-    value: count,
-    color: STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#27272a'
-  }))
+  if (!stats?.statusCounts) return null;
 
-  const sourceData = Object.entries(stats.sourceStats).map(([source, count]) => ({
-    name: source,
-    value: count
-  }))
+  const statusData = Object.entries(stats.statusCounts).map(
+    ([status, count]) => ({
+      name: status,
+      value: count,
+      color: STATUS_COLORS[status as keyof typeof STATUS_COLORS] || "#27272a",
+    }),
+  );
+
+  const sourceData = Object.entries(stats.sourceStats).map(
+    ([source, count]) => ({
+      name: source,
+      value: count,
+    }),
+  );
 
   // Funnel data for conversion analysis
   const funnelData = [
-    { name: 'Applied', value: stats.funnelData.applied, fill: '#3b82f6' },
-    { name: 'Screen', value: stats.funnelData.screen, fill: '#8b5cf6' },
-    { name: 'Interview', value: stats.funnelData.interview, fill: '#ec4899' },
-    { name: 'Offer', value: stats.funnelData.offer, fill: '#10b981' }
-  ].filter(stage => stage.value > 0)
+    { name: "Applied", value: stats.funnelData.applied, fill: "#3b82f6" },
+    { name: "Screen", value: stats.funnelData.screen, fill: "#8b5cf6" },
+    { name: "Interview", value: stats.funnelData.interview, fill: "#ec4899" },
+    { name: "Offer", value: stats.funnelData.offer, fill: "#10b981" },
+  ].filter((stage) => stage.value > 0);
 
   // Response rate by source data
   const sourceResponseData = Object.entries(stats.sourceResponseRate)
@@ -51,12 +63,12 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
       name: source,
       rate: data.rate,
       total: data.total,
-      responded: data.responded
+      responded: data.responded,
     }))
-    .sort((a, b) => b.rate - a.rate)
+    .sort((a, b) => b.rate - a.rate);
 
   // Weekly timeline data (last 12 weeks)
-  const weeklyData = stats.weeklyTimelineData.slice(-12)
+  const weeklyData = stats.weeklyTimelineData.slice(-12);
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -75,13 +87,16 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
           {funnelData.length > 0 ? (
             <div className="space-y-4">
               {funnelData.map((stage, idx) => {
-                const percentage = stats.funnelData.applied > 0
-                  ? Math.round((stage.value / stats.funnelData.applied) * 100)
-                  : 0
-                const prevStage = idx > 0 ? funnelData[idx - 1].value : stage.value
-                const conversionRate = prevStage > 0
-                  ? Math.round((stage.value / prevStage) * 100)
-                  : 100
+                const percentage =
+                  stats.funnelData.applied > 0
+                    ? Math.round((stage.value / stats.funnelData.applied) * 100)
+                    : 0;
+                const prevStage =
+                  idx > 0 ? funnelData[idx - 1].value : stage.value;
+                const conversionRate =
+                  prevStage > 0
+                    ? Math.round((stage.value / prevStage) * 100)
+                    : 100;
 
                 return (
                   <div key={stage.name} className="space-y-2">
@@ -107,12 +122,12 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${percentage}%`,
-                          backgroundColor: stage.fill
+                          backgroundColor: stage.fill,
                         }}
                       />
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           ) : (
@@ -148,13 +163,20 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#27272a', color: '#fafafa' }}
+                contentStyle={{
+                  backgroundColor: "#0a0a0a",
+                  borderColor: "#27272a",
+                  color: "#fafafa",
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
             {statusData.map((entry) => (
-              <div key={entry.name} className="flex items-center justify-between text-xs font-mono">
+              <div
+                key={entry.name}
+                className="flex items-center justify-between text-xs font-mono"
+              >
                 <div className="flex items-center gap-2">
                   <div
                     className="w-2 h-2 rounded-full"
@@ -182,17 +204,28 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12, fill: '#a1a1aa' }}
-                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                tick={{ fontSize: 12, fill: "#a1a1aa" }}
+                tickFormatter={(value) =>
+                  new Date(value).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                }
                 stroke="#27272a"
               />
               <YAxis
-                tick={{ fontSize: 12, fill: '#a1a1aa' }}
+                tick={{ fontSize: 12, fill: "#a1a1aa" }}
                 stroke="#27272a"
               />
               <Tooltip
-                contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#27272a', color: '#fafafa' }}
-                labelFormatter={(value) => `Week of ${new Date(value).toLocaleDateString()}`}
+                contentStyle={{
+                  backgroundColor: "#0a0a0a",
+                  borderColor: "#27272a",
+                  color: "#fafafa",
+                }}
+                labelFormatter={(value) =>
+                  `Week of ${new Date(value).toLocaleDateString()}`
+                }
               />
               <Bar dataKey="count" fill="#ea580c" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -215,19 +248,27 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={sourceResponseData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis type="number" tick={{ fontSize: 12, fill: '#a1a1aa' }} stroke="#27272a" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 12, fill: "#a1a1aa" }}
+                  stroke="#27272a"
+                />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={{ fontSize: 12, fill: '#a1a1aa' }}
+                  tick={{ fontSize: 12, fill: "#a1a1aa" }}
                   stroke="#27272a"
                   width={100}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#27272a', color: '#fafafa' }}
+                  contentStyle={{
+                    backgroundColor: "#0a0a0a",
+                    borderColor: "#27272a",
+                    color: "#fafafa",
+                  }}
                   formatter={(value: any, name: string, props: any) => [
                     `${value}% (${props.payload.responded}/${props.payload.total})`,
-                    'Response Rate'
+                    "Response Rate",
                   ]}
                 />
                 <Bar dataKey="rate" fill="#10b981" radius={[0, 4, 4, 0]} />
@@ -246,7 +287,8 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
               Salary Analysis
             </CardTitle>
             <CardDescription className="text-xs">
-              Based on {stats.salaryAnalysis.count} applications with salary data
+              Based on {stats.salaryAnalysis.count} applications with salary
+              data
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -255,7 +297,8 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Average Range</p>
                   <p className="text-lg font-bold">
-                    ${(stats.salaryAnalysis.avgMin / 1000).toFixed(0)}k - ${(stats.salaryAnalysis.avgMax / 1000).toFixed(0)}k
+                    ${(stats.salaryAnalysis.avgMin / 1000).toFixed(0)}k - $
+                    {(stats.salaryAnalysis.avgMax / 1000).toFixed(0)}k
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -280,7 +323,9 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
               <div className="pt-4 border-t">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Currency</span>
-                  <span className="font-mono">{stats.salaryAnalysis.currency}</span>
+                  <span className="font-mono">
+                    {stats.salaryAnalysis.currency}
+                  </span>
                 </div>
               </div>
             </div>
@@ -302,16 +347,20 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12, fill: '#a1a1aa' }}
+                  tick={{ fontSize: 12, fill: "#a1a1aa" }}
                   stroke="#27272a"
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#a1a1aa' }}
+                  tick={{ fontSize: 12, fill: "#a1a1aa" }}
                   stroke="#27272a"
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#27272a', color: '#fafafa' }}
-                  cursor={{ fill: '#27272a', opacity: 0.4 }}
+                  contentStyle={{
+                    backgroundColor: "#0a0a0a",
+                    borderColor: "#27272a",
+                    color: "#fafafa",
+                  }}
+                  cursor={{ fill: "#27272a", opacity: 0.4 }}
                 />
                 <Bar dataKey="value" fill="#ea580c" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -320,5 +369,5 @@ export function ApplicationCharts({ stats }: ApplicationChartsProps) {
         </Card>
       )}
     </div>
-  )
+  );
 }
