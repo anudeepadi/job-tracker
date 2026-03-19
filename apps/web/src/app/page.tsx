@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { HeroSection } from '@/components/hero-section'
 import {
   Bot,
   Search,
@@ -61,23 +62,23 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-border/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-foreground flex items-center justify-center">
-                <Bot className="h-5 w-5 text-background" />
+              <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center">
+                <Bot className="h-5 w-5 text-[#0a0a0a]" />
               </div>
-              <span className="text-xl font-bold tracking-tight">
+              <span className="text-xl font-bold tracking-tight text-white">
                 HireAgent
               </span>
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/10">
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="bg-white text-black hover:bg-white/90 rounded-full">
                 <Link href="/register">Get Started</Link>
               </Button>
             </div>
@@ -85,61 +86,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative">
-        {/* Gradient spotlight */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[800px] h-[600px] rounded-full bg-gradient-to-br from-blue-100/60 via-purple-100/40 to-orange-100/30 dark:from-blue-900/20 dark:via-purple-900/15 dark:to-orange-900/10 blur-3xl" />
-        </div>
-
-        <div className="relative container mx-auto px-6 pt-24 pb-20 md:pt-36 md:pb-28">
-          <div className="max-w-5xl mx-auto text-center space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/60 bg-background/80 backdrop-blur text-sm text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Powered by AI Agents
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.9]">
-              Get hired
-              <br />
-              <span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">
-                with AI agents
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Your AI workforce searches jobs, tailors your resume, and tracks
-              every application — so you can focus on what matters: landing
-              interviews.
-            </p>
-
-            {/* CTA */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button
-                asChild
-                size="lg"
-                className="h-13 px-8 text-base rounded-xl"
-              >
-                <Link href="/register">
-                  Start Free
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-13 px-8 text-base rounded-xl"
-              >
-                <Link href="/login">Sign In</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Dark Hero */}
+      <HeroSection />
 
       {/* Platform logos */}
       <section className="relative z-10 border-t border-border/30 bg-muted/30">
@@ -182,7 +130,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="border-t border-border/30 bg-muted/20">
+      <section id="how-it-works" className="border-t border-border/30 bg-muted/20">
         <div className="container mx-auto px-6 py-20 md:py-28">
           <div className="max-w-6xl mx-auto space-y-16">
             <div className="text-center space-y-4">
