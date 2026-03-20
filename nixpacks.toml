@@ -12,14 +12,11 @@ cmds = [
     "cd apps/web && npx next build"
 ]
 
-# Explicitly disable the release phase — Nixpacks auto-injects
-# "prisma migrate deploy" here when it detects migrations, but
-# Railway's internal network is unavailable during Docker build.
+# No [start] section — start commands are set per-service
+# via NIXPACKS_START_CMD env vars to avoid leaking to Docker services.
+
 [phases.release]
 cmds = []
-
-[start]
-cmd = "cd apps/web && npx prisma db push --accept-data-loss && npx next start -p ${PORT:-3000}"
 
 [variables]
 NODE_ENV = "production"
