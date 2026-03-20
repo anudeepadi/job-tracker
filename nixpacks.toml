@@ -1,21 +1,19 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "pnpm", "python39", "postgresql"]
-aptPkgs = ["build-essential"]
+nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
 cmds = [
     "pnpm install --frozen-lockfile",
-    "cd apps/web && pnpm prisma generate"
+    "cd apps/web && npx prisma generate"
 ]
 
 [phases.build]
 cmds = [
-    "cd apps/web && pnpm run build"
+    "cd apps/web && npx next build"
 ]
 
 [start]
-cmd = "cd apps/web && npx prisma migrate deploy && pnpm start"
+cmd = "cd apps/web && npx prisma db push --accept-data-loss && npx next start -p ${PORT:-3000}"
 
 [variables]
 NODE_ENV = "production"
-NIXPACKS_NO_CACHE = "false"
