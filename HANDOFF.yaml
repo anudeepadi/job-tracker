@@ -1,0 +1,237 @@
+# HireAgent — Agent Handoff Document
+# Generated: 2026-03-07
+# Repo: https://github.com/anudeepadi/effective-barnacle.git
+# Branch: master (will become "production")
+
+project:
+  name: HireAgent
+  description: AI-powered job search platform with multi-agent system
+  repo: https://github.com/anudeepadi/effective-barnacle.git
+  branch: master
+
+architecture:
+  type: pnpm monorepo
+  web:
+    path: apps/web/
+    framework: Next.js 15 (App Router)
+    language: TypeScript
+    styling: Tailwind CSS + shadcn/ui
+    auth: JWT via jose, middleware injects x-user-id header
+    database: PostgreSQL via Prisma ORM
+    ai: Google Gemini API (GEMINI_API_KEY)
+    port: 3000
+  agent:
+    path: services/job-agent/
+    framework: FastAPI + CrewAI
+    language: Python 3.12
+    ai_agents:
+      - Job Search Specialist (Adzuna, LinkedIn, JSearch, RemoteOK)
+      - Skills Development Advisor
+      - Interview Preparation Coach
+      - Career Strategy Advisor
+      - Cover Letter Specialist (NEW)
+      - Follow-up Email Specialist (NEW)
+      - Networking Strategy Advisor (NEW)
+    port: 8000
+
+database_models:
+  - User, Session, UserPreference
+  - Application, Activity, Reminder
+  - ApplyTemplate, SearchPreset
+  - JobSearch, JobResult, AgentOutput
+  - SavedAlert, EmailVerification, PasswordReset
+  - Contact (NEW - migration pending on Cloud SQL)
+
+gcp_infrastructure:
+  project_id: project-d47967a3-e711-43ac-968
+  account: anudeep.archive@gmail.com
+  region: us-central1
+  services:
+    web:
+      name: jobtracker-web
+      url: https://jobtracker-web-987688822880.us-central1.run.app
+      cpu: 1
+      memory: 512Mi
+      dockerfile: Dockerfile.web.cloudrun
+      cloudbuild: cloudbuild.web.yaml
+    agent:
+      name: jobtracker-agent
+      url: https://jobtracker-agent-987688822880.us-central1.run.app
+      cpu: 1
+      memory: 1Gi
+      dockerfile: Dockerfile.agent.cloudrun
+      cloudbuild: cloudbuild.agent.yaml
+  database:
+    instance: jobtracker-db
+    version: PostgreSQL 15
+    tier: db-f1-micro
+    public_ip: 104.154.172.225
+  artifact_registry: us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker
+  secrets:
+    - jwt-secret
+    - db-password
+    - cron-secret
+  last_deployed: 2026-02-11
+
+completed_phases:
+  phase_1_foundation: 8/8 tasks done
+  phase_2_core_features: 6/6 tasks done
+  phase_3_ui_polish: 3/3 tasks done
+  phase_4_gcp_deployment: deployed and live
+  phase_5_new_features: AI Resume Tailoring, Analytics, Job Alerts
+  phase_6_production_and_features:
+    track_a_production_hardening:
+      - A1: Structured logging (pino) + Sentry error tracking [DONE]
+      - A2: E2E tests with Playwright - 17 smoke test specs [DONE]
+      - A3: Unit/integration tests - 234 total tests passing [DONE]
+      - A4: Rate limiting on auth (5/min) and AI (10/min) endpoints [DONE]
+      - A5: Zod input validation on all API routes [DONE]
+      - A6: Expanded health monitoring (DB + agent + memory checks) [DONE]
+    track_b_ai_differentiators:
+      - B1: Agent Activity Dashboard with real-time status [DONE]
+      - B2: Cover Letter Agent (CrewAI) [DONE]
+      - B3: Follow-up Email Agent (auto-draft after 7+ days) [DONE]
+      - B4: Resume Optimization Tab (side-by-side diff + ATS score) [DONE]
+      - B5: Networking Suggestions Agent [DONE]
+    track_c_table_stakes:
+      - C1: Kanban board view with drag-and-drop (@dnd-kit) [DONE]
+      - C2: Cover Letter Generator UI [DONE]
+      - C3: Contact/Networking Tracker (new Contact model) [DONE]
+      - C4: Chrome Extension [DEFERRED - design only]
+      - C5: Calendar Integration (Google, Outlook, .ics - URL-based) [DONE]
+
+test_status:
+  unit_tests: 234 passing, 0 failing (22 test files)
+  e2e_tests: 17 Playwright specs (4 spec files, not yet run against live server)
+  python_tests: 6 test files in services/job-agent/tests/
+
+what_is_NOT_deployed_yet:
+  - All Phase 6 changes (7 commits since last deploy on Feb 11)
+  - Contact model migration (prisma schema updated but not migrated on Cloud SQL)
+  - New Python agents (cover letter, followup, networking)
+  - Sentry DSN not configured yet (env vars needed)
+
+pending_work:
+  ci_cd_pipeline:
+    status: DESIGNED AND APPROVED, NOT YET IMPLEMENTED
+    description: |
+      Single GitHub Actions workflow (deploy.yml) that ties production branch
+      to automatic GCloud Cloud Run deployment.
+    tasks:
+      1_create_service_account: |
+        gcloud iam service-accounts create github-deployer \
+          --display-name="GitHub Actions Deployer" \
+          --project=project-d47967a3-e711-43ac-968
+
+        SA=github-deployer@project-d47967a3-e711-43ac-968.iam.gserviceaccount.com
+        for ROLE in roles/run.admin roles/artifactregistry.writer roles/cloudbuild.builds.editor roles/iam.serviceAccountUser roles/secretmanager.secretAccessor roles/cloudsql.client; do
+          gcloud projects add-iam-policy-binding project-d47967a3-e711-43ac-968 --member="serviceAccount:$SA" --role="$ROLE"
+        done
+      2_workload_identity_federation: |
+        gcloud iam workload-identity-pools create github-actions-pool \
+          --location="global" --display-name="GitHub Actions Pool" \
+          --project=project-d47967a3-e711-43ac-968
+
+        gcloud iam workload-identity-pools providers create-oidc github-provider \
+          --location="global" --workload-identity-pool="github-actions-pool" \
+          --display-name="GitHub OIDC" \
+          --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.actor=assertion.actor" \
+          --attribute-condition="assertion.repository=='anudeepadi/effective-barnacle'" \
+          --issuer-uri="https://token.actions.githubusercontent.com" \
+          --project=project-d47967a3-e711-43ac-968
+
+        # Then bind SA to pool:
+        POOL_ID=$(gcloud iam workload-identity-pools describe github-actions-pool --location=global --format="value(name)" --project=project-d47967a3-e711-43ac-968)
+        gcloud iam service-accounts add-iam-policy-binding $SA \
+          --role="roles/iam.workloadIdentityUser" \
+          --member="principalSet://iam.googleapis.com/${POOL_ID}/attribute.repository/anudeepadi/effective-barnacle" \
+          --project=project-d47967a3-e711-43ac-968
+      3_github_secrets: |
+        gh secret set GCP_PROJECT_ID --body "project-d47967a3-e711-43ac-968"
+        gh secret set GCP_WIF_PROVIDER --body "<output from step 2>"
+        gh secret set GCP_SERVICE_ACCOUNT --body "github-deployer@project-d47967a3-e711-43ac-968.iam.gserviceaccount.com"
+      4_create_deploy_yml: |
+        Create .github/workflows/deploy.yml with 5 jobs:
+        - lint (all branches): pnpm lint + ruff + black
+        - test (all branches): pnpm test + pytest
+        - docker-build (all branches): build both Dockerfiles, push only on production
+        - security-scan (all branches): Trivy HIGH/CRITICAL
+        - deploy (production only): prisma migrate via Cloud SQL proxy + gcloud run deploy + health check
+      5_branch_setup: |
+        git branch -m master production
+        git push origin production
+        git push origin --delete master
+        gh api repos/anudeepadi/effective-barnacle -X PATCH -f default_branch=production
+        git checkout -b development
+        git push -u origin development
+      6_branch_protection: |
+        gh api repos/anudeepadi/effective-barnacle/branches/production/protection -X PUT \
+          -F "required_status_checks[strict]=true" \
+          -F "required_status_checks[contexts][]=lint" \
+          -F "required_status_checks[contexts][]=test" \
+          -F "required_status_checks[contexts][]=docker-build" \
+          -F "required_status_checks[contexts][]=security-scan" \
+          -F "enforce_admins=false" \
+          -F "required_pull_request_reviews[required_approving_review_count]=0" \
+          -F "restrictions=null"
+
+  manual_deploy_now:
+    description: Deploy latest code to GCloud without CI/CD
+    steps:
+      1_migrate_db: |
+        # Start Cloud SQL proxy
+        /tmp/cloud-sql-proxy --port 5433 project-d47967a3-e711-43ac-968:us-central1:jobtracker-db &
+        sleep 5
+        # Apply migration for Contact model
+        cd apps/web
+        DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password)
+        ENCODED_PASSWORD=$(python3 -c "import urllib.parse; import sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$DB_PASSWORD")
+        DATABASE_URL="postgresql://jobtracker_app:${ENCODED_PASSWORD}@localhost:5433/jobtracker" npx prisma migrate deploy
+        kill %1
+      2_build_and_deploy: |
+        gcloud builds submit --config cloudbuild.web.yaml .
+        gcloud builds submit --config cloudbuild.agent.yaml .
+        gcloud run deploy jobtracker-web --image=us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker/web:latest --region=us-central1 --allow-unauthenticated
+        gcloud run deploy jobtracker-agent --image=us-central1-docker.pkg.dev/project-d47967a3-e711-43ac-968/jobtracker/agent:latest --region=us-central1 --allow-unauthenticated
+      3_verify: |
+        curl -s https://jobtracker-web-987688822880.us-central1.run.app/api/health | jq .
+        curl -s https://jobtracker-agent-987688822880.us-central1.run.app/health | jq .
+
+  env_vars_needed:
+    web:
+      - NEXT_PUBLIC_SENTRY_DSN (optional, enables Sentry error tracking)
+      - SENTRY_DSN (optional, server-side Sentry)
+      - LOG_LEVEL (optional, default: info)
+    agent:
+      - SENTRY_DSN (optional, enables Sentry)
+
+local_dev:
+  start: ./dev.sh  # starts Docker DB + both services
+  ports:
+    database: 5433
+    web: 3000
+    agent: 8000
+  test_web: cd apps/web && pnpm test
+  test_agent: cd services/job-agent && pytest -v
+  test_e2e: cd apps/web && pnpm test:e2e
+
+key_files:
+  - apps/web/src/app/layout.tsx (root layout)
+  - apps/web/src/app/page.tsx (landing page)
+  - apps/web/src/app/dashboard/page.tsx (main dashboard)
+  - apps/web/src/components/dashboard/dashboard.tsx (dashboard with tabs)
+  - apps/web/src/middleware.ts (auth middleware)
+  - apps/web/src/lib/auth.ts (JWT auth helpers)
+  - apps/web/src/lib/prisma.ts (Prisma client)
+  - apps/web/src/lib/logger.ts (pino structured logging)
+  - apps/web/src/lib/rate-limit.ts (rate limiter)
+  - apps/web/src/lib/validations/ (zod schemas)
+  - apps/web/src/lib/calendar.ts (calendar URL generators)
+  - apps/web/prisma/schema.prisma (database schema)
+  - services/job-agent/app/main.py (FastAPI entrypoint)
+  - services/job-agent/app/services/crew_service.py (CrewAI orchestration)
+  - services/job-agent/app/agents/ (individual AI agents)
+  - Dockerfile.web.cloudrun (web Docker image)
+  - Dockerfile.agent.cloudrun (agent Docker image)
+  - cloudbuild.web.yaml (Cloud Build config)
+  - cloudbuild.agent.yaml (Cloud Build config)

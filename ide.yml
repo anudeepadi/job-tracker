@@ -1,0 +1,12 @@
+name: effective-barnacle
+rows:
+  - size: 70%
+    panes:
+      - title: Claude 1
+        command: claude
+      - title: Claude 2
+        command: claude
+  - panes:
+      - title: Dev Server
+        command: pnpm dev
+      - title: Shell
